@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}CineTrack - Profile{% endblock %}
+
+{% block content %}
+    <div class="container" style="text-align: center;">
+        <h1>Profile</h1>
+        <p><strong>Username:</strong> {{ user.username }}</p>
+        <p><strong>Favorite Genre:</strong> 
+            {% if genre_names %}
+                {{ genre_names | join(', ') }}
+            {% else %}
+                No favorite genres selected.
+            {% endif %}
+        </p>
+        <p><strong>Favorite Movies:</strong> {{ user.favorite_movies }}</p>
+        <p><strong>Favorite People:</strong> {{ user.favorite_people }}</p>
+        <a href="{{ url_for('main.home') }}">Home</a>
+        <a href="{{ url_for('main.logout') }}">Log Out</a>
+    </div>
+{% endblock %}

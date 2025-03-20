@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}CineTrack - Home{% endblock %}
+
+{% block content %}
+    {% if 'user_id' in session %}
+        <section class="hero">
+            <div class="hero-text">
+                <input type="text" id="search" placeholder="Search for movies...">
+                <button onclick="searchMovie()">Search</button>
+            </div>
+        </section>
+        <section class="movie-list">
+            <h2>Trending Movies</h2>
+            <div class="movie-grid" id="trending-movie-list">
+                {% for movie in trending_movies %}
+                    <div class="movie-box" onclick="openMovieDesc('{{ movie.id }}')">
+                        <img src="https://image.tmdb.org/t/p/w500{{ movie.poster_path }}" alt="{{ movie.title }}">
+                        <div class="movie-info">
+                            <h3>{{ movie.title }}</h3>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+        <section class="movie-list">
+            <h2>Suggested for You</h2>
+            <div class="movie-grid" id="suggested-movie-list">
+                {% for movie in suggested_movies %}
+                    <div class="movie-box" onclick="openMovieDesc('{{ movie.id }}')">
+                        <img src="https://image.tmdb.org/t/p/w500{{ movie.poster_path }}" alt="{{ movie.title }}">
+                        <div class="movie-info">
+                            <h3>{{ movie.title }}</h3>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+    {% else %}
+        {% include 'login.html' %}
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}CineTrack - Community{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <!-- Search Bar -->
+        <div class="search-container">
+            <form method="POST">
+                <input type="text" id="search" name="search_query" placeholder="Search for users by username...">
+                <button type="submit" id="search-button">Search</button>
+            </form>
+        </div>
+
+        <!-- Flex Container for Search Results and Incoming Requests -->
+        <div class="flex-container">
+            <!-- Search Results -->
+            <div id="search-results">
+                {% if users %}
+                    <h2>Search Results:</h2>
+                    <div class="user-blocks">
+                        {% for user in users %}
+                            <div class="user-block">
+                                <p class="username">{{ user.username }}</p>
+                                {% if user.id in friends %}
+                                    <img src="{{ url_for('static', filename='images/friend.webp') }}" alt="Friend" class="icon">
+                                {% elif user.id in sent_requests %}
+                                    <img src="{{ url_for('static', filename='images/pending.webp') }}" alt="Pending" class="icon">
+                                {% else %}
+                                    <button class="icon-button send-request" data-user-id="{{ user.id }}">
+                                        <img src="{{ url_for('static', filename='images/sendicon.webp') }}" alt="Send Friend Request" class="icon">
+                                    </button>
+                                {% endif %}
+                                <a href="{{ url_for('view_profile', user_id=user.id) }}" class="view-profile">View Profile</a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            <!-- Incoming Requests -->
+            <div id="incoming-requests">
+                <h2>Incoming Friend Requests:</h2>
+                <ul>
+                    {% for request in incoming_requests %}
+                        <li>
+                            {{ request.sender.username }}
+                            <form action="{{ url_for('main.accept_friend_request', request_id=request.id) }}" method="POST" style="display: inline;">
+                                <button type="submit">Accept</button>
+                            </form>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+{% endblock %}

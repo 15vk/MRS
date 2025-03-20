@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CineTrack{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    {% if 'user_id' in session %}
+        <div class="hamburger" onclick="toggleNav()">&#9776;</div>
+        <div id="mySidenav" class="sidenav">
+            <a href="javascript:void(0)" class="closebtn" onclick="toggleNav()">&times;</a>
+            <a href="{{ url_for('main.home') }}">Home</a>
+            <a href="{{ url_for('main.mylist') }}">My Lists</a>
+            <a href="#">Top Rated</a>
+            <a href="{{ url_for('main.profile') }}">Profile</a>
+            <a href="{{ url_for('main.community') }}">People</a> <!-- Updated link -->
+            <a href="{{ url_for('main.friends_chat') }}">Friends Chat</a>
+            <a href="{{ url_for('main.logout') }}">Log Out</a>
+        </div>
+    {% endif %}
+    <header>
+        <h1><strong>CineTrack</strong></h1>
+        {% if 'user_id' in session %}
+            <div class="user-info">
+                <a href="{{ url_for('main.profile') }}">{{ session['username'] }}</a>
+                <a href="{{ url_for('main.logout') }}">Log Out</a>
+            </div>
+        {% endif %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flashes">
+                    {% for category, message in messages %}
+                        <li class="{{ category }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,643 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-color: #00a2f9ca;
+}
+
+header {
+    background-color: #00a2f9ca;
+    color: white;
+    padding: 10px 0;
+    text-align: center;
+    position: relative;
+}
+
+header .user-info {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+}
+
+header .user-info span {
+    margin-right: 10px;
+}
+
+header h2 {
+    font-size: 18px;
+    margin-top: 5px;
+    color: #ccc;
+}
+
+main {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.hero {
+    background: url("images/search_bg.jpg") no-repeat center center/cover;
+    width: 100%;
+    height: 50vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    text-align: center;
+}
+
+.hero-text {
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.hero-text input {
+    padding: 15px;
+    font-size: 18px;
+    width: 300px;
+    margin-right: 10px;
+    border: none;
+    border-radius: 4px;
+}
+
+.hero-text button {
+    padding: 15px 20px;
+    font-size: 18px;
+    cursor: pointer;
+    border: none;
+    border-radius: 4px;
+    background-color: #ff6f61;
+    color: white;
+}
+
+.hero-text button:hover {
+    background-color: #ff4c3b;
+}
+
+.movie-list {
+    color: #ffffff;
+    background-color: #020109;
+    padding: 20px;
+    margin: 20px 0;
+    width: 90%;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.movie-grid {
+    display: flex;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding: 10px;
+}
+
+.movie-box {
+    background-color: #333;
+    margin: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    width: 180px;
+    height: 250px;
+    text-align: center;
+    transition: transform 0.2s;
+    display: inline-block;
+    vertical-align: top;
+}
+
+.movie-box:hover {
+    transform: scale(1.05);
+}
+
+.movie-box img {
+    height: 70%;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.movie-info {
+    padding: 10px 0;
+}
+
+.movie-box h3 {
+    font-size: 16px;
+    margin: 10px 0 0 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    word-wrap: break-word;
+    max-width: 100%;
+    color: white;
+}
+
+body {
+    font-family: Arial, sans-serif;
+}
+
+.hamburger {
+    color: white;
+    font-size: 30px;
+    cursor: pointer;
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 100;
+}
+
+.sidenav {
+    height: 100%;
+    width: 0;
+    position: fixed;
+    z-index: 1;
+    top: 0;
+    left: 0;
+    background-color: #103757;
+    overflow-x: hidden;
+    transition: 0.5s;
+    padding-top: 60px;
+}
+
+.sidenav a {
+    padding: 8px 8px 8px 32px;
+    text-decoration: none;
+    font-size: 25px;
+    color: #ffffff;
+    display: block;
+    transition: 0.3s;
+}
+
+.sidenav a:hover {
+    color: #f1f1f1;
+}
+
+.sidenav .closebtn {
+    position: absolute;
+    top: 0;
+    right: 25px;
+    font-size: 36px;
+    margin-left: 50px;
+}
+
+.user-info {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    font-size: 18px;
+}
+
+.flash-messages {
+    margin: 20px auto;
+    text-align: center;
+}
+
+.flash {
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    font-size: 14px;
+    width: 80%;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.flash.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.flash.danger {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+.link-spacing {
+    margin-right: 20px;
+}
+.movie-card {
+    width: 80%;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    padding: 16px;
+    margin: 16px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-wrap: wrap;
+}
+.movie-poster {
+    max-width: 300px;
+    border-radius: 8px;
+    margin-right: 16px;
+}
+.movie-info_desc {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.movie-info h2 {
+    margin-top: 0;
+}
+.cast-list {
+    width: 80%;
+    background-color: #000000;
+    border: 1px solid #781010;
+    padding: 16px;
+    margin: 16px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 16px;
+    color: white;
+}
+.cast-container {
+    display: flex;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+.cast-member {
+    display: inline-block;
+    margin-right: 20px;
+    text-align: center;
+}
+.cast-member img {
+    border-radius: 50%;
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+}
+
+.search-container {
+    margin-top: 20px;
+}
+
+#search {
+    padding: 10px;
+    font-size: 16px;
+    width: 300px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+#search-results {
+    margin-top: 10px;
+}
+
+.search-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.search-item img {
+    width: 50px;
+    height: 50px;
+    border-radius: 4px;
+    margin-right: 10px;
+}
+
+body {
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    margin-top: 50px;
+}
+
+.genre {
+    display: inline-block;
+    padding: 10px 20px;
+    margin: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: #f0f0f0;
+}
+
+.genre.selected {
+    background-color: #ff6f61;
+    color: rgb(255, 255, 255);
+}
+
+#genres-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 4px;
+    background-color: #ff6f61;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #ff4c3b;
+}
+#selected-genres-container {
+    margin-top: 20px;
+}
+
+#selected-genres-list {
+    font-size: 16px;
+    color: #333;
+}
+
+.flex-container {
+    display: flex;
+    justify-content: space-between; /* Add space between search results and incoming requests */
+    align-items: flex-start; /* Align items at the top */
+    gap: 20px; /* Add spacing between the two sections */
+    margin: 20px auto; /* Center the container horizontally */
+    width: 90%; /* Set the width to 90% of the screen */
+}
+
+#search-results, #incoming-requests {
+    flex: 1; /* Allow both sections to take equal space */
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#search-results {
+    max-width: 60%; /* Limit the width of the search results */
+}
+
+#incoming-requests {
+    max-width: 35%; /* Limit the width of the incoming requests */
+}
+
+.user-blocks {
+    display: flex;
+    flex-direction: column; /* Stack user blocks vertically */
+    gap: 20px; /* Add spacing between user blocks */
+}
+
+.user-block {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.user-block:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+}
+
+.username {
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+.icon {
+    height: 1.5em;
+    margin-left: 10px;
+}
+
+.icon-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.icon-button:hover .icon {
+    transform: scale(1.1);
+}
+/* Style for the search container */
+.search-container {
+    display: flex;
+    justify-content: flex-start; /* Align the search bar to the left */
+    align-items: center;
+    margin-top: 20px;
+    padding-left: 20px; /* Add some padding to align it properly */
+}
+
+/* Style for the search input */
+#search {
+    padding: 15px; /* Increase padding for a larger input field */
+    font-size: 18px; /* Increase font size */
+    width: 400px; /* Make the search bar wider */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+/* Style for the search button */
+#search-button {
+    padding: 15px 20px; /* Increase padding for a larger button */
+    font-size: 18px; /* Increase font size */
+    margin-left: 10px; /* Add spacing between the input and button */
+    border: none;
+    border-radius: 4px;
+    background-color: #ff6f61;
+    color: white;
+    cursor: pointer;
+}
+
+#search-button:hover {
+    background-color: #ff4c3b;
+}
+
+.chat-container {
+    display: flex;
+    height: 90vh; /* Full height minus header */
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* Friends List (Left Sidebar) */
+#friends-list {
+    width: 20%;
+    background-color: #f9f9f9;
+    border-right: 1px solid #ddd;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+#friends-list h2 {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+
+.friend-item {
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.friend-item:hover {
+    background-color: #f0f0f0;
+}
+
+.friend-item.active {
+    background-color: #e0e0e0;
+    font-weight: bold;
+}
+
+/* Chat Interface (Right Sidebar) */
+#chat-interface {
+    width: 80%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background-color: #fff;
+}
+
+#chat-header {
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-bottom: 1px solid #ddd;
+    text-align: center;
+}
+
+#chat-box {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+    background-color: #f5f5f5;
+}
+
+.chat-message {
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 4px;
+    background-color: #e0e0e0;
+    max-width: 70%;
+}
+
+#chat-input-container {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid #ddd;
+    background-color: #f9f9f9;
+}
+
+#chat-input {
+    flex: 1;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-right: 10px;
+}
+
+#send-button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #ff6f61;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#send-button:hover {
+    background-color: #ff4c3b;
+}
+
+/* Floating Comment Section */
+.floating-window {
+    position: fixed;
+    top: 10%;
+    left: 10%;
+    width: 80%;
+    height: 80%;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.floating-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.floating-header h3 {
+    margin: 0;
+}
+
+.floating-header button {
+    padding: 5px 10px;
+    background-color: #ff6f61;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.floating-header button:hover {
+    background-color: #ff4c3b;
+}
+
+.hidden {
+    display: none;
+}
+
+#comments-section {
+    width: 80%;
+    margin: 20px auto; /* Center the comments section horizontally */
+    padding: 20px;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.comment {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: #fff;
+}
+
+.comment button {
+    margin-right: 10px;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 4px;
+    background-color: #ff6f61;
+    color: white;
+    cursor: pointer;
+}
+
+.comment button:hover {
+    background-color: #ff4c3b;
+}
+
+#loading-indicator {
+    text-align: center;
+    margin-top: 10px;
+    font-size: 16px;
+    color: #666;
+}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Search Results{% endblock %}
+
+{% block content %}
+    <h2>Search Results</h2>
+    <div class="search-results">
+        <h3>Movies</h3>
+        <div class="movie-grid">
+            {% for movie in movies %}
+                <div class="movie-box" onclick="openMovieDesc('{{ movie.id }}')">
+                    <img src="https://image.tmdb.org/t/p/w500{{ movie.poster_path }}" alt="{{ movie.title }}">
+                    <div class="movie-info">
+                        <h3>{{ movie.title }}</h3>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        <h3>People</h3>
+        <div class="people-grid">
+            {% for person in people %}
+                <div class="person-box">
+                    <img src="https://image.tmdb.org/t/p/w500{{ person.profile_path }}" alt="{{ person.name }}">
+                    <div class="person-info">
+                        <h3>{{ person.name }}</h3>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

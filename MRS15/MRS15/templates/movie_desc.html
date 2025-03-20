@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}{{ movie.title }}{% endblock %}
+
+{% block content %}
+    <div class="movie-card">
+        <img src="https://image.tmdb.org/t/p/w500{{ movie.poster_path }}" alt="{{ movie.title }}" class="movie-poster">
+        <div class="movie-info_desc">
+            <h2>{{ movie.title }}</h2>
+            <p>{{ movie.overview }}</p>
+            <p><strong>Release Date:</strong> {{ movie.release_date }}</p>
+            <p><strong>Rating:</strong> {{ movie.vote_average }}</p>
+
+            <!-- Feedback Section -->
+            <div id="feedback-section">
+                <h3>Your Feedback</h3>
+                <div id="feedback-container">
+                    {% if user_feedback %}
+                        <p>Your Feedback: <span id="user-feedback">{{ user_feedback.feedback }}</span></p>
+                        <button id="edit-feedback-button" onclick="toggleFeedbackForm()">Edit Feedback</button>
+                    {% else %}
+                        <button id="add-feedback-button" onclick="toggleFeedbackForm()">Add Feedback</button>
+                    {% endif %}
+                </div>
+
+                <!-- Feedback Form -->
+                <div id="feedback-form" class="hidden">
+                    <textarea id="feedback-input" placeholder="Write your feedback...">{{ user_feedback.feedback if user_feedback else '' }}</textarea>
+                    <br>
+                    <label for="rating-input">Rating (optional):</label>
+                    <input type="number" id="rating-input" min="1" max="10" value="{{ user_feedback.rating if user_feedback else '' }}">
+                    <br>
+                    <button onclick="submitFeedback()">Submit</button>
+                    <button onclick="toggleFeedbackForm()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cast-list">
+        <h3>Cast</h3>
+        <div class="cast-container">
+            {% for member in cast %}
+                <div class="cast-member">
+                    <img src="https://image.tmdb.org/t/p/w500{{ member.profile_path }}" alt="{{ member.name }}">
+                    <p>{{ member.name }}</p>
+                    <p>as {{ member.character }}</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Comments Section -->
+    <div id="comments-section">
+        <h3>Comments</h3>
+        <div id="comments-list"></div>
+        <div id="loading-indicator" class="hidden">Loading...</div>
+    </div>
+
+    <script>
+        const movieId = "{{ movie_id }}"; // Pass the movie ID dynamically
+
+        // Toggle the feedback form visibility
+        function toggleFeedbackForm() {
+            const feedbackForm = document.getElementById('feedback-form');
+            const feedbackContainer = document.getElementById('feedback-container');
+            feedbackForm.classList.toggle('hidden');
+            feedbackContainer.classList.toggle('hidden');
+        }
+
+        // Submit feedback
+        function submitFeedback() {
+            const feedback = document.getElementById('feedback-input').value;
+            const rating = document.getElementById('rating-input').value;
+
+            fetch(`/movie/${movieId}/feedback`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ feedback, rating })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('user-feedback').textContent = feedback;
+                    toggleFeedbackForm(); // Hide the form and show the feedback
+                } else {
+                    alert(data.message);
+                }
+            });
+        }
+    </script>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}CineTrack - Friends Chat{% endblock %}
+
+{% block content %}
+    <div class="chat-container">
+        <!-- Friends List (Left Sidebar) -->
+        <div id="friends-list">
+            <h2>Your Friends</h2>
+            <ul>
+                {% for friend in friends %}
+                    <li class="friend-item" onclick="openChat('{{ friend.id }}', '{{ friend.username }}')">
+                        {{ friend.username }}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- Chat Interface (Right Sidebar) -->
+        <div id="chat-interface">
+            <div id="chat-header">
+                <h2 id="chat-friend-name">Select a friend to chat</h2>
+            </div>
+            <div id="chat-box"></div>
+            <div id="chat-input-container">
+                <input type="text" id="chat-input" placeholder="Type a message...">
+                <button id="send-button" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentFriendId = null;
+
+    // Function to open a chat with a specific friend
+    function openChat(friendId, friendName) {
+        currentFriendId = friendId;
+        document.getElementById('chat-friend-name').textContent = friendName; // Update the chat header
+        loadChatMessages(); // Load chat messages for the selected friend
+    }
+
+    // Function to load chat messages
+    function loadChatMessages() {
+        if (!currentFriendId) return;
+
+        // Fetch chat messages from the server
+        fetch(`/chat/messages/${currentFriendId}`)
+            .then(response => response.json())
+            .then(data => {
+                const chatBox = document.getElementById('chat-box');
+                chatBox.innerHTML = ''; // Clear the chat box
+                data.messages.forEach(message => {
+                    const messageElement = document.createElement('div');
+                    messageElement.classList.add('chat-message');
+                    messageElement.textContent = message;
+                    chatBox.appendChild(messageElement);
+                });
+                chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the bottom
+            });
+    }
+
+    // Function to send a message
+    function sendMessage() {
+        const message = document.getElementById('chat-input').value;
+        if (message.trim() === '') return;
+
+        // Send the message to the server
+        fetch(`/chat/send`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ friendId: currentFriendId, message: message })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('chat-input').value = ''; // Clear the input field
+                loadChatMessages(); // Reload chat messages
+            } else {
+                alert('Failed to send message');
+            }
+        });
+    }
+</script>
+{% endblock %}

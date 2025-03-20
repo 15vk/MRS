@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}CineTrack - Choose Favorites{% endblock %}
+
+{% block content %}
+<div class="container" style="text-align: center;">
+    <h1>Choose Your Favorite Genres</h1>
+    <form method="POST" id="favorites-form">
+        <div id="genres-container">
+            {% for genre in genres %}
+                <label class="genre-label">
+                    <input type="checkbox" name="selected_genres" value="{{ genre.id }}" class="genre-checkbox">
+                    <span class="genre-name">{{ genre.name }}</span>
+                </label>
+            {% endfor %}
+        </div>
+        <button type="submit" class="btn btn-primary">Save Favorites</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    #genres-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .genre-label {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 20px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
+    }
+
+    .genre-label:hover {
+        transform: scale(1.1); /* Expand on hover */
+        background-color: #f0f0f0;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); /* Add a shadow */
+    }
+
+    .genre-checkbox {
+        display: none; /* Hide the checkbox */
+    }
+
+    .genre-checkbox:checked + .genre-name {
+        background-color: #007bff; /* Change color when selected */
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+    }
+
+    .genre-name {
+        padding: 10px 20px;
+        border-radius: 5px;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My List</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            width: 80%;
+            margin: 0 auto;
+        }
+        .toggle-switch {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .toggle-switch input {
+            display: none;
+        }
+        .toggle-switch label {
+            background-color: #ccc;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .toggle-switch input:checked + label {
+            background-color: #007bff;
+            color: white;
+        }
+        .list-section {
+            display: none;
+        }
+        .list-section.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>My List</h1>
+        <div class="toggle-switch">
+            <input type="radio" id="movies" name="toggle" checked>
+            <label for="movies">Movies</label>
+            <input type="radio" id="series" name="toggle">
+            <label for="series">Series</label>
+        </div>
+        <div id="movies-section" class="list-section active">
+            <h2>Movies</h2>
+            <ul>
+                <!-- List of movies -->
+                <li>Movie 1</li>
+                <li>Movie 2</li>
+                <li>Movie 3</li>
+            </ul>
+        </div>
+        <div id="series-section" class="list-section">
+            <h2>Series</h2>
+            <ul>
+                <!-- List of series -->
+                <li>Series 1</li>
+                <li>Series 2</li>
+                <li>Series 3</li>
+            </ul>
+        </div>
+    </div>
+    <script>
+        document.querySelectorAll('.toggle-switch input').forEach(input => {
+            input.addEventListener('change', function() {
+                document.querySelectorAll('.list-section').forEach(section => {
+                    section.classList.remove('active');
+                });
+                if (this.id === 'movies') {
+                    document.getElementById('movies-section').classList.add('active');
+                } else {
+                    document.getElementById('series-section').classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
