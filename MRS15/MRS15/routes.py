@@ -15,26 +15,31 @@ TMDB_MOVIE_DETAILS_URL = "https://api.themoviedb.org/3/movie/{movie_id}?api_key=
 TMDB_MOVIE_CREDITS_URL = "https://api.themoviedb.org/3/movie/{movie_id}/credits?api_key={api_key}"
 TMDB_GENRES_URL = f"https://api.themoviedb.org/3/genre/movie/list?api_key={TMDB_API_KEY}&language=en-US"
 
-@main.route('/search', methods=['GET'])
+@main.route('/search')
 def search():
-    query = request.args.get('query')
+    query = request.args.get('query', '')
     if not query:
-        return jsonify({'movies': [], 'people': []})
+        flash('Please enter a search query.', 'warning')
+        return redirect(url_for('main.home'))
 
-    # Perform fuzzy search on movies and people
-    all_movies = requests.get(TMDB_SUGGESTED_URL).json().get('results', [])
-    all_people = []  # You need to fetch people data from an appropriate API
+    try:
+        # Search movies from TMDB
+        search_url = f"https://api.themoviedb.org/3/search/movie?api_key={TMDB_API_KEY}&query={query}"
+        response = requests.get(search_url)
+        if response.status_code == 200:
+            movies = response.json().get('results', [])
+            # Sort movies by popularity (descending order)
+            movies.sort(key=lambda x: x.get('popularity', 0), reverse=True)
+            # Limit to top 20 results
+            movies = movies[:20]
+        else:
+            movies = []
+            flash('Failed to fetch movie data.', 'danger')
 
-    movie_titles = [movie['title'] for movie in all_movies]
-    people_names = [person['name'] for person in all_people]
-
-    movie_matches = process.extract(query, movie_titles, limit=10)
-    people_matches = process.extract(query, people_names, limit=10)
-
-    matched_movies = [movie for movie in all_movies if movie['title'] in dict(movie_matches).keys()]
-    matched_people = [person for person in all_people if person['name'] in dict(people_matches).keys()]
-
-    return jsonify({'movies': matched_movies, 'people': matched_people})
+        return render_template('search_results.html', query=query, movies=movies)
+    except Exception as e:
+        flash(f"An error occurred: {str(e)}", 'danger')
+        return redirect(url_for('main.home'))
 
 @main.route('/')
 def home():

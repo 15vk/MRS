@@ -8,34 +8,12 @@ function toggleNav() {
 }
 
 function searchMovie() {
-    const query = document.getElementById('search').value;
-    fetch(`/search`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ query })
-    })
-    .then(response => response.json())
-    .then(data => {
-        const movieList = document.getElementById('movie-list');
-        movieList.innerHTML = '';
-        data.results.forEach(movie => {
-            const movieDiv = document.createElement('div');
-            movieDiv.className = 'movie-box';
-            movieDiv.innerHTML = `
-                <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}">
-                <div class="movie-info">
-                    <h3>${movie.title}</h3>
-                </div>
-            `;
-            movieDiv.addEventListener('click', () => {
-                window.location.href = `/movie/${movie.id}`;
-            });
-            movieList.appendChild(movieDiv);
-        });
-    })
-    .catch(error => console.error('Error searching movies:', error));
+    const query = document.getElementById('search').value.trim();
+    if (query) {
+        window.location.href = `/search?query=${encodeURIComponent(query)}`;
+    } else {
+        alert('Please enter a search query.');
+    }
 }
 
 function search() {
@@ -82,4 +60,26 @@ function search() {
 
 function openMovieDesc(movieId) {
     window.location.href = `/movie_desc/${movieId}`;
+}
+
+function displayMovies(movies) {
+    const movieList = document.getElementById('movie-list');
+    movieList.innerHTML = '';
+
+    movies.forEach(movie => {
+        const movieBox = document.createElement('div');
+        movieBox.className = 'movie-box';
+        movieBox.innerHTML = `
+            <img class="movie-poster" src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}">
+            <div class="movie-info">
+                <div class="movie-title">${movie.title}</div>
+                <div class="movie-details">
+                    <p>Release Date: ${movie.release_date}</p>
+                    <p class="movie-rating">Rating: ⭐ ${movie.vote_average}/10</p>
+                    <p>${movie.overview.substring(0, 100)}...</p>
+                </div>
+            </div>
+        `;
+        movieList.appendChild(movieBox);
+    });
 }
