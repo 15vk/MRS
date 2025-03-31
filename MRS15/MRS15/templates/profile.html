@@ -1,21 +1,325 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineTrack - {{ user.username }}'s Profile</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a1a, #333);
+            color: white;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .profile-container {
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 30px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        .profile-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 40px;
+            animation: fadeIn 0.8s ease-in-out;
+        }
+        
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #e74c3c, #8e44ad);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .profile-avatar span {
+            font-size: 60px;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .profile-username {
+            font-size: 36px;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .profile-sections {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+        
+        .profile-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+            animation: slideUp 0.5s ease-out forwards;
+            opacity: 0;
+        }
+        
+        .profile-section:nth-child(1) {
+            animation-delay: 0.1s;
+        }
+        
+        .profile-section:nth-child(2) {
+            animation-delay: 0.3s;
+        }
+        
+        .profile-section:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+        
+        .section-header {
+            background: linear-gradient(to right, #e74c3c, #8e44ad);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-header i {
+            font-size: 24px;
+            margin-right: 10px;
+        }
+        
+        .section-header h2 {
+            margin: 0;
+            font-size: 22px;
+        }
+        
+        .section-content {
+            padding: 20px;
+        }
+        
+        .genres-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .genre-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            color: white;
+            transition: all 0.3s;
+        }
+        
+        .genre-badge:hover {
+            background: #e74c3c;
+            transform: scale(1.05);
+        }
+        
+        .movie-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        
+        .movie-card {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+            transition: transform 0.3s;
+        }
+        
+        .movie-card:hover {
+            transform: scale(1.05);
+        }
+        
+        .movie-poster {
+            width: 100%;
+            height: 225px;
+            object-fit: cover;
+        }
+        
+        .movie-title {
+            padding: 10px;
+            font-size: 14px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.5);
+        }
+        
+        .empty-message {
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        .action-button {
+            background: #e74c3c;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            display: inline-block;
+            transition: background 0.3s;
+        }
+        
+        .action-button:hover {
+            background: #c0392b;
+            text-decoration: none;
+            color: white;
+        }
+        
+        .navbar {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px 30px;
+        }
+        
+        .navbar-brand {
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            margin: 0 10px;
+            transition: color 0.3s;
+        }
+        
+        .nav-link:hover {
+            color: white;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a class="navbar-brand" href="/">CineTrack</a>
+        <div class="ml-auto">
+            <a class="nav-link d-inline" href="/">Home</a>
+            <a class="nav-link d-inline" href="/search">Search</a>
+            <a class="nav-link d-inline" href="/community">Community</a>
+            <a class="nav-link d-inline" href="/logout">Logout</a>
+        </div>
+    </nav>
 
-{% block title %}CineTrack - Profile{% endblock %}
+    <div class="profile-container">
+        <div class="profile-header">
+            <div class="profile-avatar">
+                <span>{{ user.username[0] | upper }}</span>
+            </div>
+            <h1 class="profile-username">{{ user.username }}</h1>
+        </div>
 
-{% block content %}
-    <div class="container" style="text-align: center;">
-        <h1>Profile</h1>
-        <p><strong>Username:</strong> {{ user.username }}</p>
-        <p><strong>Favorite Genre:</strong> 
-            {% if genre_names %}
-                {{ genre_names | join(', ') }}
-            {% else %}
-                No favorite genres selected.
-            {% endif %}
-        </p>
-        <p><strong>Favorite Movies:</strong> {{ user.favorite_movies }}</p>
-        <p><strong>Favorite People:</strong> {{ user.favorite_people }}</p>
-        <a href="{{ url_for('main.home') }}">Home</a>
-        <a href="{{ url_for('main.logout') }}">Log Out</a>
+        <div class="profile-sections">
+            <div class="profile-section">
+                <div class="section-header">
+                    <i class="fas fa-film"></i>
+                    <h2>Favorite Genres</h2>
+                </div>
+                <div class="section-content genres-container">
+                    {% if genre_names %}
+                        {% for genre in genre_names %}
+                            <span class="genre-badge">{{ genre }}</span>
+                        {% endfor %}
+                    {% else %}
+                        <p class="empty-message">No favorite genres selected yet.</p>
+                        {% if session.get('user_id') == user.id %}
+                        <a href="/favorites" class="action-button">Add Genres</a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="profile-section">
+                <div class="section-header">
+                    <i class="fas fa-star"></i>
+                    <h2>Favorite Movies</h2>
+                </div>
+                <div class="section-content">
+                    {% if user.favorite_movies %}
+                        <div class="movie-grid" id="favorite-movies">
+                            <!-- Movies will be loaded here via JavaScript -->
+                        </div>
+                    {% else %}
+                        <p class="empty-message">No favorite movies selected yet.</p>
+                        {% if session.get('user_id') == user.id %}
+                        <a href="/favorites" class="action-button">Add Movies</a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
-{% endblock %}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if there are favorite movies to load
+            const favoriteMoviesContainer = document.getElementById('favorite-movies');
+            if (favoriteMoviesContainer && "{{ user.favorite_movies }}") {
+                // Get movie IDs from user's favorite_movies
+                const movieIds = "{{ user.favorite_movies }}".split(',').filter(id => id.trim() !== '');
+                
+                if (movieIds.length > 0) {
+                    loadFavoriteMovies(movieIds);
+                }
+            }
+            
+            // Function to load movie details from TMDB API
+            async function loadFavoriteMovies(movieIds) {
+                const apiKey = "e508d75277a707b73ee8bb0698caa1fd";
+                
+                for (const movieId of movieIds) {
+                    try {
+                        const response = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${apiKey}`);
+                        const movie = await response.json();
+                        
+                        if (movie.id) {
+                            const movieCard = document.createElement('div');
+                            movieCard.className = 'movie-card';
+                            
+                            const posterPath = movie.poster_path 
+                                ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` 
+                                : 'https://via.placeholder.com/150x225?text=No+Image';
+                            
+                            movieCard.innerHTML = `
+                                <a href="/movie_desc/${movie.id}">
+                                    <img src="${posterPath}" alt="${movie.title}" class="movie-poster">
+                                    <div class="movie-title">${movie.title}</div>
+                                </a>
+                            `;
+                            
+                            favoriteMoviesContainer.appendChild(movieCard);
+                        }
+                    } catch (error) {
+                        console.error('Error loading movie:', error);
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

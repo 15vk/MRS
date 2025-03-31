@@ -1,64 +1,444 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineTrack - Select Favorites</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(to right, #000000, #8B0000);
+            color: white;
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+        }
+        
+        .container {
+            padding-top: 30px;
+        }
+        
+        .page-title {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #ffffff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .favorites-container {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .selected-movies-container {
+            flex: 1;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
+            position: sticky;
+            top: 20px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .search-container {
+            flex: 1;
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #ff6b6b;
+            border-bottom: 2px solid #ff6b6b;
+            padding-bottom: 10px;
+        }
+        
+        .genre-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .genre-item {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 8px 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .genre-item:hover {
+            background: rgba(255, 107, 107, 0.3);
+        }
+        
+        .genre-item.selected {
+            background: #ff6b6b;
+            color: white;
+            border-color: #ff6b6b;
+        }
+        
+        #movie-search {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            margin-bottom: 15px;
+        }
+        
+        #movie-search::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .movie-results {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        
+        .movie-item {
+            display: flex;
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .movie-item:hover {
+            background: rgba(255, 107, 107, 0.2);
+        }
+        
+        .movie-poster {
+            width: 60px;
+            height: 90px;
+            object-fit: cover;
+            margin-right: 15px;
+            border-radius: 5px;
+        }
+        
+        .movie-info {
+            flex: 1;
+        }
+        
+        .movie-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .movie-year, .movie-rating {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .selected-movies {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+        }
+        
+        .selected-movie-card {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        
+        .selected-movie-card img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+        }
+        
+        .selected-movie-info {
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.7);
+        }
+        
+        .selected-movie-title {
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .remove-movie {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        
+        .submit-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+            display: block;
+            margin: 30px auto 0;
+            width: 200px;
+        }
+        
+        .submit-btn:hover {
+            background: #ff4757;
+        }
+        
+        .movie-limit-warning {
+            color: #ff4757;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #ff6b6b;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="page-title">Select Your Favorites</h1>
+        
+        <div class="favorites-container">
+            <!-- Left side: Selected Movies -->
+            <div class="selected-movies-container">
+                <h2 class="section-title">Your Selected Movies</h2>
+                <div class="selected-movies" id="selected-movies">
+                    <!-- Selected movies will appear here -->
+                    <p id="no-movies-message">No movies selected yet</p>
+                </div>
+                <p class="movie-limit-warning" id="movie-limit-warning">You can only select up to 6 favorite movies.</p>
+            </div>
+            
+            <!-- Right side: Search and Genres -->
+            <div class="search-container">
+                <h2 class="section-title">Select Your Favorite Genres</h2>
+                <div class="genre-container" id="genre-container">
+                    {% for genre in genres %}
+                    <div class="genre-item" data-id="{{ genre.id }}">{{ genre.name }}</div>
+                    {% endfor %}
+                </div>
+                
+                <input type="text" id="movie-search" placeholder="Search for movies...">
+                <div id="movie-results" class="movie-results"></div>
 
-{% block title %}CineTrack - Choose Favorites{% endblock %}
-
-{% block content %}
-<div class="container" style="text-align: center;">
-    <h1>Choose Your Favorite Genres</h1>
-    <form method="POST" id="favorites-form">
-        <div id="genres-container">
-            {% for genre in genres %}
-                <label class="genre-label">
-                    <input type="checkbox" name="selected_genres" value="{{ genre.id }}" class="genre-checkbox">
-                    <span class="genre-name">{{ genre.name }}</span>
-                </label>
-            {% endfor %}
+                    <!-- Search results will appear here -->
+                </div>
+            </div>
         </div>
-        <button type="submit" class="btn btn-primary">Save Favorites</button>
-    </form>
-</div>
-{% endblock %}
+        
+        <button id="submit-favorites" class="submit-btn">Save Favorites</button>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Store selected genres and movies
+            const selectedGenres = new Set();
+            const selectedMovies = new Map(); // Map to store movie id -> movie data
+            const MAX_MOVIES = 6;
 
-{% block styles %}
-<style>
-    #genres-container {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 10px;
-    }
+            
+            
+            // Set up genre selection
+            const genreItems = document.querySelectorAll('.genre-item');
+            genreItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    this.classList.toggle('selected');
+                    const genreId = this.dataset.id;
+                    
+                    if (this.classList.contains('selected')) {
+                        selectedGenres.add(genreId);
+                    } else {
+                        selectedGenres.delete(genreId);
+                    }
+                });
+            });
+            
+            // Set up movie search
+            const movieSearch = document.getElementById('movie-search');
+            const movieResults = document.getElementById('movie-results');
 
-    .genre-label {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 10px 20px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
-    }
+            movieSearch.addEventListener('input', debounce(async function() {
+                const query = this.value.trim();
+                if (query.length < 2) {
+                    movieResults.innerHTML = '';
+                    return;
+                }
 
-    .genre-label:hover {
-        transform: scale(1.1); /* Expand on hover */
-        background-color: #f0f0f0;
-        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); /* Add a shadow */
-    }
+                try {
+                    const response = await fetch(`/search1?query=${encodeURIComponent(query)}`);
+                    const data = await response.json();
+                    if (data.movies) {
+                        displaySearchResults(data.movies);
+                    } else {
+                        movieResults.innerHTML = '<p class="p-3">No movies found</p>';
+                    }
+                } catch (error) {
+                    console.error('Error searching movies:', error);
+                    movieResults.innerHTML = '<p class="p-3">Error searching movies</p>';
+                }
+            }, 500));
 
-    .genre-checkbox {
-        display: none; /* Hide the checkbox */
-    }
+            function displaySearchResults(movies) {
+                movieResults.innerHTML = '';
+                
+                if (!movies || movies.length === 0) {
+                    movieResults.innerHTML = '<p class="p-3">No movies found</p>';
+                    return;
+                }
+                
+                movies.forEach(movie => {
+                    const movieElement = document.createElement('div');
+                    movieElement.className = 'movie-item';
+                    
+                    const posterPath = movie.poster_path 
+                        ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` 
+                        : 'https://via.placeholder.com/60x90?text=No+Image';
+                    
+                    movieElement.innerHTML = `
+                        <img class="movie-poster" src="${posterPath}" alt="${movie.title}">
+                        <div class="movie-info">
+                            <div class="movie-title">${movie.title}</div>
+                            <div class="movie-year">${movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'}</div>
+                            <div class="movie-rating">⭐ ${movie.vote_average}</div>
+                        </div>
+                    `;
+                    
+                    movieElement.addEventListener('click', () => toggleMovieSelection(movie));
+                    
+                    movieResults.appendChild(movieElement);
+                });
+            }
 
-    .genre-checkbox:checked + .genre-name {
-        background-color: #007bff; /* Change color when selected */
-        color: white;
-        padding: 10px 20px;
-        border-radius: 5px;
-    }
-
-    .genre-name {
-        padding: 10px 20px;
-        border-radius: 5px;
-    }
-</style>
-{% endblock %}
+            
+            // Toggle movie selection
+            function toggleMovieSelection(movie) {
+                if (selectedMovies.has(movie.id)) {
+                    selectedMovies.delete(movie.id);
+                } else {
+                    selectedMovies.set(movie.id, movie);
+                }
+                
+                updateSelectedMoviesDisplay();
+                document.getElementById('movie-limit-warning').style.display = 'none';
+            }
+            
+            // Update the display of selected movies
+            function updateSelectedMoviesDisplay() {
+                const container = document.getElementById('selected-movies');
+                const noMoviesMessage = document.getElementById('no-movies-message');
+                
+                if (selectedMovies.size === 0) {
+                    container.innerHTML = '<p id="no-movies-message">No movies selected yet</p>';
+                    return;
+                }
+                
+                container.innerHTML = '';
+                
+                selectedMovies.forEach(movie => {
+                    const movieCard = document.createElement('div');
+                    movieCard.className = 'selected-movie-card';
+                    
+                    const posterPath = movie.poster_path 
+                        ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` 
+                        : 'https://via.placeholder.com/150x225?text=No+Image';
+                    
+                    movieCard.innerHTML = `
+                        <img src="${posterPath}" alt="${movie.title}">
+                        <button class="remove-movie" data-id="${movie.id}">×</button>
+                        <div class="selected-movie-info">
+                            <div class="selected-movie-title">${movie.title}</div>
+                        </div>
+                    `;
+                    
+                    container.appendChild(movieCard);
+                });
+                
+                // Add event listeners to remove buttons
+                document.querySelectorAll('.remove-movie').forEach(button => {
+                    button.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const movieId = this.dataset.id;
+                        selectedMovies.delete(parseInt(movieId));
+                        updateSelectedMoviesDisplay();
+                    });
+                });
+            }
+            
+            // Submit favorites
+            document.getElementById('submit-favorites').addEventListener('click', async function() {
+                if (selectedMovies.size === 0) {
+                    alert('Please select at least one movie');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/submit_favorites', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            genres: Array.from(selectedGenres),
+                            movies: Array.from(selectedMovies.keys())
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (response.ok) {
+                        alert(result.message);
+                        window.location.href = '/'; // Redirect to index page
+                    } else {
+                        alert('Error: ' + result.message);
+                    }
+                } catch (error) {
+                    console.error('Error saving favorites:', error);
+                    alert('Error saving favorites. Please try again.');
+                }
+            });
+            
+            // Debounce function to limit API calls
+            function debounce(func, wait) {
+                let timeout;
+                return function() {
+                    const context = this, args = arguments;
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => {
+                        func.apply(context, args);
+                    }, wait);
+                };
+            }
+        });
+    </script>
+</body>
+</html>

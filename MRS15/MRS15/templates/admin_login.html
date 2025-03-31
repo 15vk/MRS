@@ -3,20 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>CineTrack - Admin Login</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a1a, #2c3e50);
+            color: #ecf0f1;
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .admin-login-container {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+            width: 300px;
+            animation: fadeIn 0.5s ease-out;
+        }
+        h2 {
+            text-align: center;
+            color: #e74c3c;
+            margin-bottom: 30px;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: #ecf0f1;
+            border-radius: 5px;
+        }
+        .input-group input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .btn {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            background: #e74c3c;
+            color: #ecf0f1;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .btn:hover {
+            background: #c0392b;
+        }
+        .links {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .links a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+        .flash-message {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            animation: slideDown 0.3s ease-out;
+        }
+        .flash-message.success { background: #2ecc71; }
+        .flash-message.danger { background: #e74c3c; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </head>
 <body>
-    <div class="container" style="text-align: center;">
-        <h1>Admin Login</h1>
-        <form method="POST">
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="password" required>
-            <br>
-            <button type="submit">Login</button>
+    <div class="admin-login-container">
+        <h2>Admin Login</h2>
+        
+        <div class="flash-messages">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-message {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+        
+        <form action="{{ url_for('main.admin') }}" method="POST">
+            <div class="input-group">
+                <input type="password" name="password" placeholder="Admin Password" required>
+            </div>
+            <button type="submit" class="btn">Login</button>
         </form>
-        <a href="{{ url_for('main.login') }}">Login</a> <p></p>
-        <a href="{{ url_for('main.signup') }}">Signup</a>
+        
+        <div class="links">
+            <a href="{{ url_for('main.login') }}">Back to User Login</a>
+        </div>
     </div>
 </body>
 </html>

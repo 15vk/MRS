@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rate {{ movie.title }} - CineTrack</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #e74c3c;
+            --secondary-color: #2c3e50;
+            --text-color: #ecf0f1;
+            --background-dark: #1a1a1a;
+            --background-light: #2d2d2d;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--background-dark), var(--background-light));
+            color: var(--text-color);
+            font-family: 'Montserrat', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        
+        .navbar {
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 15px 20px;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            transition: top 0.3s ease-in-out;
+        }
+        
+        .navbar-brand {
+            color: var(--primary-color);
+            font-size: 28px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        
+        .rating-container {
+            max-width: 800px;
+            margin: 100px auto 50px;
+            padding: 30px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.8s ease-out;
+        }
+        
+        .movie-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+            animation: slideRight 0.8s ease-out;
+        }
+        
+        .movie-poster {
+            width: 150px;
+            border-radius: 10px;
+            margin-right: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .movie-info h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+        
+        .movie-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .movie-meta span {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+        
+        .rating-form {
+            animation: slideUp 0.8s ease-out;
+        }
+        
+        .form-title {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            position: relative;
+            display: inline-block;
+            padding-bottom: 10px;
+        }
+        
+        .form-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 50%;
+            height: 3px;
+            background: var(--primary-color);
+        }
+        
+        .star-rating {
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        
+        .star-rating input {
+            display: none;
+        }
+        
+        .star-rating label {
+            cursor: pointer;
+            font-size: 40px;
+            color: #444;
+            padding: 0 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .star-rating label:hover,
+        .star-rating label:hover ~ label,
+        .star-rating input:checked ~ label {
+            color: #f39c12;
+        }
+        
+        .rating-label {
+            text-align: center;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            min-height: 30px;
+        }
+        
+        .review-textarea {
+            width: 100%;
+            padding: 15px;
+            border-radius: 10px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            margin-bottom: 30px;
+            resize: vertical;
+            min-height: 150px;
+            font-size: 1rem;
+            transition: background 0.3s ease;
+        }
+        
+        .review-textarea:focus {
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+        }
+        
+        .submit-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: block;
+            margin: 0 auto;
+        }
+        
+        .submit-btn:hover {
+            background: #c0392b;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideRight {
+            from { 
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .back-btn {
+            color: var(--text-color);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            margin-bottom: 20px;
+            transition: color 0.3s ease;
+        }
+        
+        .back-btn:hover {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        
+        .back-btn i {
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a class="navbar-brand" href="/">CineTrack</a>
+    </nav>
+
+    <div class="container rating-container">
+        <a href="{{ url_for('main.movie_desc', movie_id=movie.id) }}" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back to movie
+        </a>
+        
+        <div class="movie-header">
+            <img src="https://image.tmdb.org/t/p/w200{{ movie.poster_path }}" alt="{{ movie.title }}" class="movie-poster">
+            <div class="movie-info">
+                <h1>{{ movie.title }}</h1>
+                <div class="movie-meta">
+                    <span><i class="far fa-calendar-alt"></i> {{ movie.release_date }}</span>
+                    <span><i class="fas fa-star"></i> {{ movie.vote_average }}/10</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="rating-form">
+            <h2 class="form-title">Rate This Movie</h2>
+            
+            <form method="POST" action="{{ url_for('main.rate_movie', movie_id=movie.id) }}">
+                <div class="star-rating">
+                    <input type="radio" id="star10" name="rating" value="10" />
+                    <label for="star10" title="10 stars"><i class="fas fa-star"></i></label>
+                    <input type="radio" id="star9" name="rating" value="9" />
+                    <label for="star9" title="9 stars"><i class="fas fa-star"></i></label>
+                    <input type="radio" id="star8" name="rating" value="8" />
+                    <label for="star8" title="8 stars"><i class="fas fa-star"></i></label>
+                    <input type="radio" id="star7" name="rating" value="7" />
+                    <label for="star7" title="7 stars"><i class="fas fa-star"></i></label>
+                    <input type="radio" id="star6" name="rating" value="6" />
+                    <label for="star6" title="6 stars"><i class="fas fa-star"></i></label>
+                    <input type="radio" id="star5" name="rating" value="5" />
+                    <label for="star5" title="5 stars"><i class="fas fa-star"></i></label>
+                    <input type="radio" id="star4" name="rating" value="4" />
+                    <label for="star4" title="4 stars"><i class="fas fa-star"></i></label>
+                    <input type="radio" id="star3" name="rating" value="3" />
+                    <label for="star3" title="3 stars"><i class="fas fa-star"></i></label>
+                    <input type="radio" id="star2" name="rating" value="2" />
+                    <label for="star2" title="2 stars"><i class="fas fa-star"></i></label>
+                    <input type="radio" id="star1" name="rating" value="1" />
+                    <label for="star1" title="1 star"><i class="fas fa-star"></i></label>
+                </div>
+                
+                <div class="rating-label" id="rating-text">Select your rating</div>
+                
+                <textarea class="review-textarea" name="feedback" placeholder="Write your review here... What did you like or dislike about the movie?"></textarea>
+                
+                <button type="submit" class="submit-btn">Submit Rating</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const stars = document.querySelectorAll('.star-rating input');
+            const ratingText = document.getElementById('rating-text');
+            const ratingDescriptions = [
+                "Terrible",
+                "Poor",
+                "Bad",
+                "Below Average",
+                "Average",
+                "Above Average",
+                "Good",
+                "Very Good",
+                "Excellent",
+                "Masterpiece"
+            ];
+            
+            stars.forEach(star => {
+                star.addEventListener('change', function() {
+                    const rating = this.value;
+                    ratingText.textContent = `${rating}/10 - ${ratingDescriptions[rating-1]}`;
+                });
+            });
+            
+            // Hide navbar on scroll down, show on scroll up
+            let prevScrollpos = window.pageYOffset;
+            window.onscroll = function() {
+                let currentScrollPos = window.pageYOffset;
+                if (prevScrollpos > currentScrollPos) {
+                    document.querySelector(".navbar").style.top = "0";
+                } else {
+                    document.querySelector(".navbar").style.top = "-60px";
+                }
+                prevScrollpos = currentScrollPos;
+            }
+        });
+    </script>
+</body>
+</html>

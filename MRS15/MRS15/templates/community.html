@@ -1,56 +1,395 @@
-{% extends "base.html" %}
-
-{% block title %}CineTrack - Community{% endblock %}
-
-{% block content %}
-    <div class="container">
-        <!-- Search Bar -->
-        <div class="search-container">
-            <form method="POST">
-                <input type="text" id="search" name="search_query" placeholder="Search for users by username...">
-                <button type="submit" id="search-button">Search</button>
-            </form>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineTrack - Community</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #e74c3c;
+            --secondary-color: #2c3e50;
+            --text-color: #ecf0f1;
+            --background-dark: #1a1a1a;
+            --background-light: #2d2d2d;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--background-dark), var(--background-light));
+            color: var(--text-color);
+            font-family: 'Montserrat', sans-serif;
+            min-height: 100vh;
+        }
+        
+        .navbar {
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 15px 20px;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .navbar-brand {
+            color: var(--primary-color);
+            font-size: 28px;
+            font-weight: bold;
+        }
+        
+        .community-container {
+            max-width: 1200px;
+            margin: 80px auto 30px;
+            padding: 30px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .section-title {
+            font-size: 2rem;
+            margin-bottom: 30px;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+        }
+        
+        .search-form {
+            margin-bottom: 30px;
+        }
+        
+        .search-input {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 25px;
+            padding: 10px 20px;
+            color: var(--text-color);
+        }
+        
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .search-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 10px 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .search-btn:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+        
+        .tabs-container {
+            margin-bottom: 30px;
+        }
+        
+        .tab-button {
+            background: rgba(0, 0, 0, 0.3);
+            border: none;
+            color: var(--text-color);
+            padding: 12px 25px;
+            margin-right: 10px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+        }
+        
+        .tab-button.active {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .tab-button:hover:not(.active) {
+            background: rgba(231, 76, 60, 0.3);
+        }
+        
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .user-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            animation: fadeIn 0.5s ease-out;
+            display: flex;
+            align-items: center;
+        }
+        
+        .user-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .user-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #e74c3c, #8e44ad);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin-right: 20px;
+        }
+        
+        .user-info {
+            flex-grow: 1;
+        }
+        
+        .user-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .user-stats {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .friend-action-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .friend-action-btn:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+        
+        .friend-action-btn.pending {
+            background: #3498db;
+        }
+        
+        .friend-action-btn.friends {
+            background: #2ecc71;
+        }
+        
+        .friend-action-btn.accept {
+            background: #2ecc71;
+            margin-right: 10px;
+        }
+        
+        .friend-action-btn.reject {
+            background: #7f8c8d;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .user-card:nth-child(1) { animation-delay: 0.1s; }
+        .user-card:nth-child(2) { animation-delay: 0.2s; }
+        .user-card:nth-child(3) { animation-delay: 0.3s; }
+        .user-card:nth-child(4) { animation-delay: 0.4s; }
+        .user-card:nth-child(5) { animation-delay: 0.5s; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <a class="navbar-brand" href="/">CineTrack</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/"><i class="fas fa-home"></i> Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/mylist"><i class="fas fa-list"></i> My List</a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="/community"><i class="fas fa-users"></i> Community</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/profile"><i class="fas fa-user"></i> Profile</a>
+                </li>
+            </ul>
         </div>
+    </nav>
 
-        <!-- Flex Container for Search Results and Incoming Requests -->
-        <div class="flex-container">
-            <!-- Search Results -->
-            <div id="search-results">
+    <div class="community-container">
+        <h1 class="section-title">CineTrack Community</h1>
+        
+        <div class="tabs-container">
+            <button class="tab-button active" data-tab="discover">Discover Users</button>
+            <button class="tab-button" data-tab="requests">Friend Requests <span class="badge badge-pill badge-danger">{{ incoming_requests|length }}</span></button>
+            <button class="tab-button" data-tab="friends">My Friends</button>
+        </div>
+        
+        <div id="discover" class="tab-content active">
+            <form class="search-form" method="POST">
+                <div class="input-group">
+                    <input type="text" class="form-control search-input" placeholder="Search for users..." name="search_query">
+                    <div class="input-group-append">
+                        <button class="btn search-btn" type="submit"><i class="fas fa-search"></i> Search</button>
+                    </div>
+                </div>
+            </form>
+            
+            <div class="user-list">
                 {% if users %}
-                    <h2>Search Results:</h2>
-                    <div class="user-blocks">
-                        {% for user in users %}
-                            <div class="user-block">
-                                <p class="username">{{ user.username }}</p>
-                                {% if user.id in friends %}
-                                    <img src="{{ url_for('static', filename='images/friend.webp') }}" alt="Friend" class="icon">
-                                {% elif user.id in sent_requests %}
-                                    <img src="{{ url_for('static', filename='images/pending.webp') }}" alt="Pending" class="icon">
-                                {% else %}
-                                    <button class="icon-button send-request" data-user-id="{{ user.id }}">
-                                        <img src="{{ url_for('static', filename='images/sendicon.webp') }}" alt="Send Friend Request" class="icon">
-                                    </button>
-                                {% endif %}
-                                <a href="{{ url_for('main.view_profile', user_id=user.id) }}" class="view-profile">View Profile</a>
+                    {% for user in users %}
+                        <div class="user-card">
+                            <div class="user-avatar">
+                                {{ user.username[0] | upper }}
                             </div>
-                        {% endfor %}
+                            <div class="user-info">
+                                <div class="user-name">{{ user.username }}</div>
+                                <div class="user-stats">
+                                    <span><i class="fas fa-film"></i> {{ user.watched_movies.count() }} movies watched</span>
+                                    <span class="ml-3"><i class="fas fa-star"></i> {{ user.comments | length }} reviews</span>
+                                </div>
+                            </div>
+                            <div class="ml-auto">
+                                {% if user.id in friends %}
+                                    <button class="friend-action-btn friends" disabled>Friends</button>
+                                {% elif user.id in sent_requests %}
+                                    <button class="friend-action-btn pending" disabled>Request Sent</button>
+                                {% elif user.id in incoming_requests %}
+                                    <form action="{{ url_for('main.accept_friend_request', request_id=user.id) }}" method="POST" style="display: inline;">
+                                        <button type="submit" class="friend-action-btn accept">Accept Request</button>
+                                    </form>
+                                {% else %}
+                                    <form action="{{ url_for('main.send_friend_request', receiver_id=user.id) }}" method="POST" style="display: inline;">
+                                        <button type="submit" class="friend-action-btn">Add Friend</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-users"></i>
+                        <p>No users found. Try searching for someone!</p>
                     </div>
                 {% endif %}
             </div>
-            <!-- Incoming Requests -->
-            <div id="incoming-requests">
-                <h2>Incoming Friend Requests:</h2>
-                <ul>
-                    {% for request in incoming_requests %}
-                        <li>
-                            {{ request.sender.username }}
+        </div>
+        
+        <div id="requests" class="tab-content">
+            <h3 class="mb-4">Friend Requests</h3>
+            
+            {% if incoming_requests %}
+                {% for request in incoming_requests %}
+                    <div class="user-card">
+                        <div class="user-avatar">
+                            {{ request.sender.username[0] | upper }}
+                        </div>
+                        <div class="user-info">
+                            <div class="user-name">{{ request.sender.username }}</div>
+                            <div class="user-stats">
+                                <span><i class="fas fa-film"></i> {{ request.sender.watched_movies.count() }} movies watched</span>
+                                <span class="ml-3"><i class="fas fa-star"></i> {{ request.sender.comments | length }} reviews</span>
+                            </div>
+                        </div>
+                        <div class="ml-auto">
                             <form action="{{ url_for('main.accept_friend_request', request_id=request.id) }}" method="POST" style="display: inline;">
-                                <button type="submit">Accept</button>
+                                <button type="submit" class="friend-action-btn accept">Accept</button>
                             </form>
-                        </li>
-                    {% endfor %}
-                </ul>
-            </div>
+                            <form action="{{ url_for('main.reject_friend_request', request_id=request.id) }}" method="POST" style="display: inline;">
+                                <button type="submit" class="friend-action-btn reject">Reject</button>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-user-plus"></i>
+                    <p>You don't have any pending friend requests.</p>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div id="friends" class="tab-content">
+            <h3 class="mb-4">My Friends</h3>
+            
+            {% if friends %}
+                {% for friend_id in friends %}
+                    {% set friend = User.query.get(friend_id) %}
+                    <div class="user-card">
+                        <div class="user-avatar">
+                            {{ friend.username[0] | upper }}
+                        </div>
+                        <div class="user-info">
+                            <div class="user-name">{{ friend.username }}</div>
+                            <div class="user-stats">
+                                <span><i class="fas fa-film"></i> {{ friend.watched_movies.count() }} movies watched</span>
+                                <span class="ml-3"><i class="fas fa-star"></i> {{ friend.comments | length }} reviews</span>
+                            </div>
+                        </div>
+                        <div class="ml-auto">
+                            <a href="{{ url_for('main.view_profile', user_id=friend.id) }}" class="btn btn-info">View Profile</a>
+                            <form action="{{ url_for('main.remove_friend', friend_id=friend.id) }}" method="POST" style="display: inline;">
+                                <button type="submit" class="friend-action-btn reject ml-2">Remove Friend</button>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-user-friends"></i>
+                    <p>You haven't added any friends yet.</p>
+                </div>
+            {% endif %}
         </div>
     </div>
-{% endblock %}
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tab switching functionality
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    
+                    // Remove active class from all buttons and tabs
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    
+                    // Add active class to current button and tab
+                    this.classList.add('active');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+        });
+    </script>
+</body>
+</html>

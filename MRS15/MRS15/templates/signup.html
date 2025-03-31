@@ -3,35 +3,206 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Signup</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>CineTrack - Sign Up</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a1a, #2c3e50);
+            color: #ecf0f1;
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .signup-container {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+            width: 300px;
+            animation: fadeIn 0.5s ease-out;
+        }
+        h2 {
+            text-align: center;
+            color: #e74c3c;
+            margin-bottom: 30px;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: #ecf0f1;
+            border-radius: 5px;
+        }
+        .input-group input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .btn {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            background: #e74c3c;
+            color: #ecf0f1;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .btn:hover {
+            background: #c0392b;
+        }
+        .links {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .links a {
+            color: #3498db;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+        .flash-message {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            animation: slideDown 0.3s ease-out;
+        }
+        .flash-message.success { background: #2ecc71; }
+        .flash-message.danger { background: #e74c3c; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .password-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+        }
+
+        .toggle-password:hover {
+            color: rgba(255, 255, 255, 1);
+        }
+    </style>
 </head>
 <body>
-    <div class="container" style="text-align: center;">
-        <h1>Create a CineTrack account</h1>
-        <!-- Flash messages -->
-            {% with messages = get_flashed_messages(with_categories=true) %}
+    <div class="signup-container">
+        <h2>Create a CineTrack account</h2>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                <div class="flash-messages">
-                    {% for category, message in messages %}
-                        <div class="flash {{ category }}">{{ message }}</div>
-                    {% endfor %}
-                </div>
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
             {% endif %}
-            {% endwith %}
-        <form method="POST">
-            <label for="username">Username:</label>
-            <input type="text" id="username" name="username" required>
-            <br><br>
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="password" required>
-            <br><br>
-            <button type="submit">Signup</button>
+        {% endwith %}
+        
+        <form action="{{ url_for('main.signup') }}" method="POST" onsubmit="return validateForm()">
+            <div class="input-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            
+            <div class="input-group">
+                <label for="password">Password:</label>
+                <div class="password-container">
+                    <input type="password" id="password" name="password" required>
+                    <button type="button" class="toggle-password" aria-label="Toggle password visibility">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <div class="password-requirements">
+                    Password must be at least 6 characters long and contain both letters and numbers.
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <label for="confirm_password">Confirm Password:</label>
+                <div class="password-container">
+                    <input type="password" id="confirm_password" name="confirm_password" required>
+                    <button type="button" class="toggle-password" aria-label="Toggle password visibility">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+            
+            
+            <button type="submit" class="btn">Sign Up</button>
         </form>
-        <br>
-        <a href="{{ url_for('main.login') }}" class="link-spacing">Login to your CineTrack account</a>
-        <br><br>
-        <a href="{{ url_for('main.admin') }}" class="link-spacing">Admin</a>
+        
+        <div class="links">
+            <a href="{{ url_for('main.login') }}">Login to your CineTrack account</a>
+        </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleButtons = document.querySelectorAll('.toggle-password');
+            
+            toggleButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const input = this.previousElementSibling;
+                    const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+                    input.setAttribute('type', type);
+                    
+                    // Change the icon
+                    const icon = this.querySelector('i');
+                    if (type === 'password') {
+                        icon.classList.remove('fa-eye-slash');
+                        icon.classList.add('fa-eye');
+                    } else {
+                        icon.classList.remove('fa-eye');
+                        icon.classList.add('fa-eye-slash');
+                    }
+                });
+            });
+        });
+
+        function validateForm() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
+            
+            // Check password length
+            if (password.length < 6) {
+                alert('Password must be at least 6 characters long');
+                return false;
+            }
+            
+            // Check if password contains both letters and numbers
+            if (!(/[a-zA-Z]/.test(password) && /[0-9]/.test(password))) {
+                alert('Password must contain both letters and numbers');
+                return false;
+            }
+            
+            // Check if passwords match
+            if (password !== confirmPassword) {
+                alert('Passwords do not match');
+                return false;
+            }
+            
+            return true;
+        }
+    </script>
 </body>
 </html>
