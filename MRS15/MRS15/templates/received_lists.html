@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Received Lists - CineTrack</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        /* General Styles */
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #1a1a1a;
+            color: #ecf0f1;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Navigation Bar */
+        .navbar {
+            background-color: #2c3e50;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-brand {
+            color: #e74c3c;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-link {
+            color: #ecf0f1;
+            text-decoration: none;
+            transition: color 0.3s ease-in-out;
+        }
+
+        .nav-link:hover {
+            color: #bdc3c7;
+        }
+
+        /* Page Container */
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 1rem;
+        }
+
+        .page-title {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        /* List Cards */
+        .list-card {
+            background-color: #2d2d2d;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+
+        .list-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0px 6px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .list-header h3 {
+            margin-bottom: 8px;
+        }
+
+        .list-header p {
+            color: #95a5a6;
+        }
+
+        /* Movies Grid */
+        .movies-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .movie-item img {
+            width: 100%;
+            border-radius: 5px;
+        }
+
+        /* Buttons */
+        .btn-save,
+        .btn-delete {
+            padding: 10px 15px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.3s ease-in-out, transform 0.2s ease-in-out;
+        }
+
+        .btn-save {
+            background-color: #00a884;
+            color: white;
+        }
+
+        .btn-save:hover {
+            opacity: 0.9;
+        }
+
+        .btn-delete {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <a href="/" class="nav-brand">CineTrack</a>
+        <div class="nav-links">
+          <a href="/" class="nav-link">Home</a>
+          <a href="/mylist" class="nav-link">My List</a>
+          <a href="/received_lists" class="nav-link">Inbox</a>
+          <a href="/community" class="nav-link">Community</a>
+          {% if 'user_id' in session %}
+              <span class="nav-link">{{ session['username'] }}</span>
+              <a href="/logout" class="nav-link">Logout</a>
+          {% else %}
+              <a href="/login" class="nav-link">Login</a>
+              <a href="/signup" class="nav-link">Sign Up</a>
+          {% endif %}
+      </div>
+    </nav>
+
+    <!-- Page Content -->
+    <div class="container">
+      <h1 class="page-title">Received Lists</h1>
+
+      {% if received_lists %}
+      {% for list in received_lists %}
+      <div class="list-card">
+          <div class="list-header">
+              <div>
+                  <h3>{{ list.name }}</h3>
+                  <p>Shared by {{ list.sender.username }}</p>
+              </div>
+              <div>
+                  <button class="btn-save" onclick="saveList('{{ list.id }}')">Save List</button>
+                  <button class="btn-delete" onclick="deleteList('{{ list.id }}')">Delete</button>
+              </div>
+          </div>
+
+          <!-- Movies Grid -->
+          <div class="movies-grid">
+              {% for movie in list.movies %}
+              <div class="movie-item">
+                  <img src="https://image.tmdb.org/t/p/w200{{ movie.poster_path }}" alt="{{ movie.title }}">
+                  <p>{{ movie.title }}</p>
+              </div>
+              {% endfor %}
+          </div>
+      </div>
+      {% endfor %}
+      {% else %}
+      <p>No lists have been shared with you yet.</p>
+      {% endif %}
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // Save List Functionality
+        async function saveList(listId) {
+            try {
+                const response = await fetch(`/save_shared_list/${listId}`, { 
+                    method: 'POST' 
+                });
+                const data = await response.json();
+                
+                if(data.success) {
+                    // Animate list card removal
+                    const listCard = document.querySelector(`[data-list-id="${listId}"]`);
+                    listCard.style.transition = 'all 0.3s ease';
+                    listCard.style.opacity = '0';
+                    listCard.style.transform = 'translateX(100px)';
+                    
+                    setTimeout(() => {
+                        listCard.remove();
+                        showToast('List saved to your collections!', 'success');
+                    }, 300);
+                } else {
+                    showToast(`Error: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Failed to save list. Please try again.', 'error');
+            }
+        }
+    
+        // Delete List Functionality
+        async function deleteList(listId) {
+            if(!confirm('Are you sure you want to delete this list?')) return;
+            
+            try {
+                const response = await fetch(`/delete_received_list/${listId}`, { 
+                    method: 'POST' 
+                });
+                const data = await response.json();
+                
+                if(data.success) {
+                    const listCard = document.querySelector(`[data-list-id="${listId}"]`);
+                    listCard.style.transition = 'all 0.3s ease';
+                    listCard.style.opacity = '0';
+                    listCard.style.transform = 'scale(0.8)';
+                    
+                    setTimeout(() => {
+                        listCard.remove();
+                        showToast('List deleted successfully', 'success');
+                    }, 300);
+                } else {
+                    showToast(`Error: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Failed to delete list. Please try again.', 'error');
+            }
+        }
+    
+        // Toast Notification System
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+    </script>
+    
+    <style>
+        /* Toast Animations */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: -300px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            opacity: 0;
+        }
+    
+        .toast.show {
+            right: 20px;
+            opacity: 1;
+        }
+    
+        .toast-success {
+            background: #00a884;
+        }
+    
+        .toast-error {
+            background: #e74c3c;
+        }
+    
+        /* List Card Transition */
+        .list-card {
+            transition: all 0.3s ease;
+        }
+    </style>
+</body>
+</html>

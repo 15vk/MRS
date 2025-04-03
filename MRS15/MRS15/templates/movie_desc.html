@@ -423,6 +423,107 @@
             color: #aaa;
             cursor: not-allowed;
         }
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.7);
+            animation: fadeIn 0.3s;
+        }
+
+        .modal-content {
+            background: rgba(0, 0, 0, 0.8);
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 500px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            animation: slideDown 0.3s;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: white;
+        }
+
+        #existing-lists {
+            margin: 20px 0;
+        }
+
+        .list-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .list-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .new-list-option {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        #new-list-btn, #create-list-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        #new-list-btn:hover, #create-list-btn:hover {
+            background: #c0392b;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 5px;
+            color: white;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
 
         
         @keyframes fadeIn {
@@ -524,18 +625,45 @@
                         <span class="movie-rating"><i class="fas fa-star"></i> {{ movie.vote_average }}/10</span>
                     </div>
                     {% if 'user_id' in session %}
-                    <div class="action-buttons">
-                        {% if user_feedback %}
-                            <button id="edit-review-btn" class="action-btn watched-btn">Edit Review</button>
-                        {% elif in_wishlist %}
-                            <button id="add-to-watched-btn" class="action-btn watched-btn">Add to Watched</button>
-                            <button class="action-btn disabled-btn">Already in Wishlist</button>
-                        {% else %}
-                            <button id="add-to-watched-btn" class="action-btn watched-btn">Add to Watched</button>
-                            <button id="add-to-wishlist-btn" class="action-btn wishlist-btn">Add to Wishlist</button>
-                        {% endif %}
-                    </div>
+                        <div class="action-buttons">
+                            {% if user_feedback %}
+                                <button id="edit-review-btn" class="action-btn watched-btn">Edit Review</button>
+                            {% elif in_wishlist %}
+                                <button id="add-to-watched-btn" class="action-btn watched-btn">Add to Watched</button>
+                                <button class="action-btn disabled-btn">Already in Wishlist</button>
+                            {% else %}
+                                <button id="add-to-watched-btn" class="action-btn watched-btn">Add to Watched</button>
+                                <button id="add-to-wishlist-btn" class="action-btn wishlist-btn">Add to Wishlist</button>
+                            {% endif %}
+                            <button id="add-to-library-btn" class="action-btn library-btn">Add to Library</button>
+                        </div>
                     {% endif %}
+                    <!-- Library Modal -->
+                    <div id="libraryModal" class="modal">
+                        <div class="modal-content">
+                            <span class="close">&times;</span>
+                            <h2>Add to Library</h2>
+                            <div id="existing-lists">
+                                <!-- Lists will be loaded here -->
+                            </div>
+                            <div class="new-list-option">
+                                <button id="new-list-btn">Create New List</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- New List Modal -->
+                    <div id="newListModal" class="modal">
+                        <div class="modal-content">
+                            <span class="close">&times;</span>
+                            <h2>Create New List</h2>
+                            <div class="form-group">
+                                <label for="list-name">List Name:</label>
+                                <input type="text" id="list-name" placeholder="Enter list name">
+                            </div>
+                            <button id="create-list-btn">Create</button>
+                        </div>
+                    </div>
 
                 </div>
             </div>
@@ -636,6 +764,137 @@
         <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
         <script>
+            // Load user lists when dropdown is opened
+            document.addEventListener('DOMContentLoaded', function() {
+                // Get modal elements
+                const libraryModal = document.getElementById('libraryModal');
+                const newListModal = document.getElementById('newListModal');
+                
+                // Get buttons
+                const addToLibraryBtn = document.getElementById('add-to-library-btn');
+                const newListBtn = document.getElementById('new-list-btn');
+                const createListBtn = document.getElementById('create-list-btn');
+                
+                // Get close buttons
+                const closeButtons = document.getElementsByClassName('close');
+                
+                // Open library modal when Add to Library button is clicked
+                addToLibraryBtn.addEventListener('click', function() {
+                    // Load existing lists
+                    loadUserLists();
+                    libraryModal.style.display = 'block';
+                });
+                
+                // Open new list modal when Create New List button is clicked
+                newListBtn.addEventListener('click', function() {
+                    libraryModal.style.display = 'none';
+                    newListModal.style.display = 'block';
+                });
+                
+                // Handle creating a new list
+                createListBtn.addEventListener('click', function() {
+                    const listName = document.getElementById('list-name').value;
+                    if (!listName) {
+                        alert('Please enter a list name');
+                        return;
+                    }
+                    
+                    // Create new list and add current movie to it
+                    fetch('/create_list', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ 
+                            name: listName,
+                            movie_id:  movie.id
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('List created and movie added successfully!');
+                            newListModal.style.display = 'none';
+                            document.getElementById('list-name').value = '';
+                        } else {
+                            alert(data.message || 'Failed to create list');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error creating list:', error);
+                        alert('An error occurred while creating the list');
+                    });
+                });
+                
+                // Close modals when close button is clicked
+                for (let i = 0; i < closeButtons.length; i++) {
+                    closeButtons[i].addEventListener('click', function() {
+                        libraryModal.style.display = 'none';
+                        newListModal.style.display = 'none';
+                    });
+                }
+                
+                // Close modals when clicking outside
+                window.addEventListener('click', function(event) {
+                    if (event.target == libraryModal) {
+                        libraryModal.style.display = 'none';
+                    }
+                    if (event.target == newListModal) {
+                        newListModal.style.display = 'none';
+                    }
+                });
+                
+                // Function to load user lists
+                // Function to load user lists
+                function loadUserLists() {
+                    fetch('/get_user_lists')
+                        .then(response => response.json())
+                        .then(data => {
+                            const listsContainer = document.getElementById('existing-lists');
+                            listsContainer.innerHTML = '';
+                            
+                            if (data.lists && data.lists.length > 0) {
+                                data.lists.forEach(list => {
+                                    const listItem = document.createElement('div');
+                                    listItem.className = 'list-item';
+                                    listItem.textContent = list.name;
+                                    listItem.addEventListener('click', function() {
+                                        addMovieToList(list.id, '{{ movie.id }}');
+                                    });
+                                    listsContainer.appendChild(listItem);
+                                });
+                            } else {
+                                listsContainer.innerHTML = '<p class="no-lists">No lists found</p>';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error loading lists:', error);
+                        });
+                }
+
+                // Function to add movie to an existing list
+                function addMovieToList(listId, movieId) {
+                    fetch(`/add_to_list/${listId}/${movieId}`, {
+                        method: 'POST'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Movie added to list successfully!');
+                            libraryModal.style.display = 'none';
+                        } else {
+                            alert(data.message || 'Failed to add movie to list');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error adding movie to list:', error);
+                        alert('An error occurred while adding the movie to the list');
+                    });
+                }
+
+            });
+
+
             document.addEventListener('DOMContentLoaded', function() {
                 // Edit Review button
                 const editReviewBtn = document.getElementById('edit-review-btn');

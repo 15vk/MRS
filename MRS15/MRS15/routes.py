@@ -1,10 +1,12 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
+from datetime import datetime
 from werkzeug.security import check_password_hash, generate_password_hash
-from .models import User, MovieComment, FriendRequest, Friendship, Genre, WatchedMovie, WishlistMovie
+from .models import User, MovieComment, FriendRequest, Friendship, Genre, WatchedMovie, WishlistMovie, UserListMovie, UserList, UserPreference, SavedList, SavedListMovie, Message, ReceivedList
 from . import db
 import requests
 from fuzzywuzzy import fuzz,process
 import re  # For password validation
+from apscheduler.schedulers.background import BackgroundScheduler
 
 main = Blueprint('main', __name__)
 
@@ -134,8 +136,30 @@ def home():
         user = User.query.get(session['user_id'])
         if user:
             trending_movies = requests.get(TMDB_TRENDING_URL).json().get('results', [])
-            suggested_movies = requests.get(TMDB_SUGGESTED_URL).json().get('results', [])
-            return render_template('index.html', username=user.username, trending_movies=trending_movies, suggested_movies=suggested_movies)
+            
+            # Get personalized recommendations
+            try:
+                final_recommendations = get_hybrid_recommendations(user.id)
+                
+                # Get movie details for the recommendations
+                recommended_movies = []
+                for movie_id, _ in final_recommendations[:12]:  # Get top 12 recommendations
+                    try:
+                        movie_details = requests.get(
+                            TMDB_MOVIE_DETAILS_URL.format(movie_id=movie_id, api_key=TMDB_API_KEY)
+                        ).json()
+                        recommended_movies.append(movie_details)
+                    except:
+                        continue
+            except Exception as e:
+                print(f"Error generating recommendations: {str(e)}")
+                # Fallback to suggested movies if recommendations fail
+                recommended_movies = requests.get(TMDB_SUGGESTED_URL).json().get('results', [])
+            
+            return render_template('index.html', 
+                                  username=user.username, 
+                                  trending_movies=trending_movies, 
+                                  recommended_movies=recommended_movies)
         else:
             flash('User not found. Please log in again.', 'danger')
             return redirect(url_for('main.logout'))
@@ -146,6 +170,7 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        
         user = User.query.filter_by(username=username).first()
         
         if user and check_password_hash(user.password, password):
@@ -158,6 +183,7 @@ def login():
             return render_template('login.html')  # Stay on the login page
     
     return render_template('login.html')
+
 
 @main.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -311,8 +337,61 @@ def mylist():
         movie_details['timestamp'] = item.timestamp
         wishlist_movies.append(movie_details)
     
-    return render_template('mylist.html', watched_movies=watched_movies, wishlist_movies=wishlist_movies)
+    # Get custom lists with movies
+    custom_lists = []
+    user_lists = UserList.query.filter_by(user_id=user_id).all()
+    
+    for user_list in user_lists:
+        list_movies = []
+        for movie in user_list.movies:
+            movie_details = requests.get(TMDB_MOVIE_DETAILS_URL.format(movie_id=movie.movie_id, api_key=TMDB_API_KEY)).json()
+            list_movies.append(movie_details)
+        
+        custom_lists.append({
+            'id': user_list.id,
+            'name': user_list.name,
+            'movies': list_movies,
+            'is_saved': False
+        })
+    
+    saved_lists = []
+    saved_db = SavedList.query.filter_by(user_id=user_id).all()
+    
+    for saved_list in saved_db:
+        # Get original list details
+        original_list = UserList.query.get(saved_list.original_list_id)
+        if not original_list:
+            continue  # Skip corrupted entries
+            
+        original_owner = User.query.get(original_list.user_id)
+        list_movies = []
+        
+        # Get movie details from original list
+        original_movies = UserListMovie.query.filter_by(list_id=saved_list.original_list_id).all()
+        for movie in original_movies:
+            try:
+                movie_details = requests.get(
+                    TMDB_MOVIE_DETAILS_URL.format(movie_id=movie.movie_id, api_key=TMDB_API_KEY)
+                ).json()
+                list_movies.append(movie_details)
+            except:
+                continue
 
+        saved_lists.append({
+            'id': saved_list.id,
+            'name': saved_list.name,
+            'movies': list_movies,
+            'original_owner': original_owner.username if original_owner else 'Deleted User',
+            'original_list_id': saved_list.original_list_id
+        })
+
+    return render_template('mylist.html',
+                        watched_movies=watched_movies,
+                        wishlist_movies=wishlist_movies,
+                        custom_lists=custom_lists,
+                        saved_lists=saved_lists)
+    
+        
 
     
 @main.route('/profile')
@@ -489,50 +568,6 @@ def reject_friend_request(request_id):
         flash('Invalid friend request.', 'danger')
     
     return redirect(url_for('main.community'))
-
-# ...existing code...
-
-@main.route('/friends/chat', methods=['GET'])
-def friends_chat():
-    if 'user_id' not in session:
-        flash('Please log in to chat with your friends.', 'danger')
-        return redirect(url_for('main.login'))
-    
-    user = User.query.get(session['user_id'])
-    friends = [friendship.user_id1 if friendship.user_id1 != user.id else friendship.user_id2 for friendship in user.friends.all()]
-    friends_list = User.query.filter(User.id.in_(friends)).all()
-    
-    return render_template('friends_chat.html', friends=friends_list)
-
-# ...existing code...
-
-@main.route('/chat/messages/<int:friend_id>', methods=['GET'])
-def get_chat_messages(friend_id):
-    if 'user_id' not in session:
-        return jsonify({'messages': []})
-    
-    user_id = session['user_id']
-    # Fetch messages between the logged-in user and the friend (placeholder logic)
-    messages = [
-        {"sender": "You", "text": "Hello!"},
-        {"sender": "Friend", "text": "Hi, how are you?"}
-    ]  # Replace with actual database query
-    return jsonify({'messages': [f"{msg['sender']}: {msg['text']}" for msg in messages]})
-
-@main.route('/chat/send', methods=['POST'])
-def send_chat_message():
-    if 'user_id' not in session:
-        return jsonify({'success': False, 'message': 'Please log in to send messages.'}), 401
-    
-    data = request.get_json()
-    friend_id = data.get('friendId')
-    message = data.get('message')
-    
-    # Save the message to the database (placeholder logic)
-    # Replace with actual database query to save the message
-    
-    return jsonify({'success': True})
-
 # ...existing code...
     
 @main.route('/movie/review/<int:review_id>/like', methods=['POST'])
@@ -713,8 +748,638 @@ def add_to_wishlist(movie_id):
     
     return jsonify({'success': True, 'message': 'Added to wishlist'})
 
+@main.route('/create_list', methods=['POST'])
+def create_list():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Please log in to create a list.'}), 401
+    
+    data = request.get_json()
+    list_name = data.get('name')
+    movie_id = data.get('movie_id')
+    
+    if not list_name:
+        return jsonify({'success': False, 'message': 'List name is required.'}), 400
+    
+    # Create new list
+    new_list = UserList(user_id=session['user_id'], name=list_name)
+    db.session.add(new_list)
+    db.session.commit()
+    
+    # Add movie to the list if movie_id is provided
+    if movie_id:
+        list_movie = UserListMovie(list_id=new_list.id, movie_id=movie_id)
+        db.session.add(list_movie)
+        db.session.commit()
+    
+    return jsonify({'success': True, 'list_id': new_list.id, 'name': new_list.name})
+
+@main.route('/add_to_list/<int:list_id>/<int:movie_id>', methods=['POST'])
+def add_to_list(list_id, movie_id):
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Please log in to add to list.'}), 401
+    
+    # Check if the list belongs to the user
+    user_list = UserList.query.filter_by(id=list_id, user_id=session['user_id']).first()
+    if not user_list:
+        return jsonify({'success': False, 'message': 'List not found.'}), 404
+    
+    # Check if movie is already in the list
+    existing = UserListMovie.query.filter_by(list_id=list_id, movie_id=movie_id).first()
+    if existing:
+        return jsonify({'success': True, 'message': 'Movie already in list'})
+    
+    # Add movie to list
+    list_movie = UserListMovie(list_id=list_id, movie_id=movie_id)
+    db.session.add(list_movie)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'Added to list'})
+
+@main.route('/get_user_lists', methods=['GET'])
+def get_user_lists():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Please log in to view lists.'}), 401
+    
+    user_lists = UserList.query.filter_by(user_id=session['user_id']).all()
+    lists_data = [{'id': list.id, 'name': list.name} for list in user_lists]
+    
+    return jsonify({'success': True, 'lists': lists_data})
+
+@main.route('/recommendations')
+def recommendations():
+    if 'user_id' not in session:
+        flash('Please log in to view recommendations.', 'danger')
+        return redirect(url_for('main.login'))
+    
+    user_id = session['user_id']
+    
+    # Get personalized recommendations
+    content_based_recs = get_content_based_recommendations(user_id)
+    collaborative_recs = get_collaborative_recommendations(user_id)
+    hybrid_recs = get_hybrid_recommendations(user_id)
+    
+    # Combine recommendations with weights
+    final_recommendations = combine_recommendations(
+        content_based_recs, 
+        collaborative_recs, 
+        hybrid_recs
+    )
+    
+    # Get movie details for the recommendations
+    recommended_movies = []
+    for movie_id, _ in final_recommendations[:12]:  # Get top 12 recommendations
+        try:
+            movie_details = requests.get(
+                TMDB_MOVIE_DETAILS_URL.format(movie_id=movie_id, api_key=TMDB_API_KEY)
+            ).json()
+            recommended_movies.append(movie_details)
+        except:
+            continue
+    
+    return render_template('recommendations.html', recommended_movies=recommended_movies)
+
+@main.route('/delete_list/<int:list_id>', methods=['POST'])
+def delete_list(list_id):
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Please log in to delete lists.'}), 401
+    
+    user_id = session['user_id']
+    
+    # Check if it's a user list or saved list
+    user_list = UserList.query.filter_by(id=list_id, user_id=user_id).first()
+    saved_list = None
+    
+    if not user_list:
+        saved_list = SavedList.query.filter_by(id=list_id, user_id=user_id).first()
+        if not saved_list:
+            return jsonify({'success': False, 'message': 'List not found.'}), 404
+    
+    try:
+        if user_list:
+            # Delete all movies in the list
+            UserListMovie.query.filter_by(list_id=list_id).delete()
+            # Delete the list
+            db.session.delete(user_list)
+        else:
+            # Delete all movies in the saved list
+            SavedListMovie.query.filter_by(saved_list_id=list_id).delete()
+            # Delete the saved list
+            db.session.delete(saved_list)
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'List deleted successfully!'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 
 
 
 #naa istam
+def get_content_based_recommendations(user_id, n=20):
+    """Get content-based recommendations based on user's favorite genres and movies"""
+    user = User.query.get(user_id)
+    
+    # Get user's favorite genres
+    favorite_genres = []
+    if user.favorite_genre:
+        favorite_genres = [int(genre_id) for genre_id in user.favorite_genre.split(',')]
+    
+    # Get user's highly rated movies
+    watched_movies = WatchedMovie.query.filter_by(user_id=user_id).all()
+    
+    # If user has no watched movies or favorite genres, return popular movies
+    if not watched_movies and not favorite_genres:
+        response = requests.get(TMDB_SUGGESTED_URL)
+        if response.status_code == 200:
+            popular_movies = [(movie['id'], movie['popularity']) 
+                             for movie in response.json().get('results', [])]
+            return popular_movies[:n]
+        return []
+    
+    # Get recommendations based on genres
+    genre_recs = []
+    for genre_id in favorite_genres:
+        url = f"https://api.themoviedb.org/3/discover/movie?api_key={TMDB_API_KEY}&with_genres={genre_id}&sort_by=popularity.desc"
+        response = requests.get(url)
+        if response.status_code == 200:
+            movies = response.json().get('results', [])
+            genre_recs.extend([(movie['id'], movie['vote_average'] * 0.5 + movie['popularity'] * 0.5) 
+                              for movie in movies])
+    
+    # Get recommendations based on watched movies
+    similar_recs = []
+    for watched in watched_movies:
+        if watched.rating >= 7.0:  # Only consider highly rated movies
+            url = f"https://api.themoviedb.org/3/movie/{watched.movie_id}/recommendations?api_key={TMDB_API_KEY}"
+            response = requests.get(url)
+            if response.status_code == 200:
+                movies = response.json().get('results', [])
+                # Weight by user rating
+                weight = watched.rating / 10.0
+                similar_recs.extend([(movie['id'], movie['vote_average'] * weight) 
+                                    for movie in movies])
+    
+    # Combine and remove duplicates
+    all_recs = {}
+    for movie_id, score in genre_recs + similar_recs:
+        if movie_id not in all_recs:
+            all_recs[movie_id] = score
+        else:
+            all_recs[movie_id] = max(all_recs[movie_id], score)
+    
+    # Sort by score
+    sorted_recs = sorted(all_recs.items(), key=lambda x: x[1], reverse=True)
+    
+    return sorted_recs[:n]
+
+def get_collaborative_recommendations(user_id, n=20):
+    """Get collaborative filtering recommendations based on similar users"""
+    # Get all users who have watched at least one movie that the current user has watched
+    user = User.query.get(user_id)
+    watched_movie_ids = [movie.movie_id for movie in user.watched_movies]
+    
+    if not watched_movie_ids:
+        return []
+    
+    # Find similar users
+    similar_users = {}
+    for movie_id in watched_movie_ids:
+        watchers = WatchedMovie.query.filter_by(movie_id=movie_id).all()
+        for watcher in watchers:
+            if watcher.user_id != user_id:
+                if watcher.user_id not in similar_users:
+                    similar_users[watcher.user_id] = 1
+                else:
+                    similar_users[watcher.user_id] += 1
+    
+    # Sort users by similarity (number of common movies)
+    similar_users = sorted(similar_users.items(), key=lambda x: x[1], reverse=True)[:10]
+    
+    # Get movies liked by similar users
+    recommendations = {}
+    for similar_user_id, similarity in similar_users:
+        similar_user = User.query.get(similar_user_id)
+        for watched in similar_user.watched_movies:
+            if watched.movie_id not in watched_movie_ids and watched.rating >= 7.0:
+                if watched.movie_id not in recommendations:
+                    recommendations[watched.movie_id] = watched.rating * similarity
+                else:
+                    recommendations[watched.movie_id] += watched.rating * similarity
+    
+    # Sort by weighted rating
+    sorted_recs = sorted(recommendations.items(), key=lambda x: x[1], reverse=True)
+    
+    return sorted_recs[:n]
+
+def get_hybrid_recommendations(user_id, n=20):
+    """Combine content-based and collaborative filtering with user behavior analysis"""
+    # Get basic recommendations
+    content_recs = get_content_based_recommendations(user_id, n=n)
+    collab_recs = get_collaborative_recommendations(user_id, n=n)
+    
+    # Analyze user behavior patterns
+    user = User.query.get(user_id)
+    watched_movies = user.watched_movies.all()
+    
+    # Calculate average rating and genres distribution
+    if watched_movies:
+        avg_rating = sum(movie.rating for movie in watched_movies) / len(watched_movies)
+        
+        # Get genre distribution
+        genre_counts = {}
+        for movie in watched_movies:
+            movie_details = requests.get(
+                TMDB_MOVIE_DETAILS_URL.format(movie_id=movie.movie_id, api_key=TMDB_API_KEY)
+            ).json()
+            for genre in movie_details.get('genres', []):
+                genre_id = genre['id']
+                if genre_id not in genre_counts:
+                    genre_counts[genre_id] = 1
+                else:
+                    genre_counts[genre_id] += 1
+        
+        # Get top genres
+        top_genres = sorted(genre_counts.items(), key=lambda x: x[1], reverse=True)[:3]
+        top_genre_ids = [genre_id for genre_id, _ in top_genres]
+        
+        # Get trending movies in top genres
+        trending_in_genres = []
+        for genre_id in top_genre_ids:
+            url = f"https://api.themoviedb.org/3/discover/movie?api_key={TMDB_API_KEY}&with_genres={genre_id}&sort_by=popularity.desc"
+            response = requests.get(url)
+            if response.status_code == 200:
+                movies = response.json().get('results', [])
+                trending_in_genres.extend([(movie['id'], movie['popularity']) for movie in movies])
+    else:
+        trending_in_genres = []
+    
+    # Combine all recommendations
+    all_recs = {}
+    
+    # Add content-based with weight 0.4
+    for movie_id, score in content_recs:
+        all_recs[movie_id] = score * 0.4
+    
+    # Add collaborative with weight 0.4
+    for movie_id, score in collab_recs:
+        if movie_id in all_recs:
+            all_recs[movie_id] += score * 0.4
+        else:
+            all_recs[movie_id] = score * 0.4
+    
+    # Add trending in genres with weight 0.2
+    for movie_id, score in trending_in_genres:
+        if movie_id in all_recs:
+            all_recs[movie_id] += score * 0.2
+        else:
+            all_recs[movie_id] = score * 0.2
+    
+    # Sort by score
+    sorted_recs = sorted(all_recs.items(), key=lambda x: x[1], reverse=True)
+    
+    return sorted_recs[:n]
+
+def combine_recommendations(content_recs, collab_recs, hybrid_recs, n=12):
+    """Combine different recommendation types with diversity considerations"""
+    # Start with hybrid recommendations as they're already combined
+    final_recs = hybrid_recs[:6]
+    
+    # Add some content-based recommendations for diversity
+    for movie_id, score in content_recs:
+        if len(final_recs) >= n:
+            break
+        if movie_id not in [rec[0] for rec in final_recs]:
+            final_recs.append((movie_id, score))
+    
+    # Add some collaborative recommendations for diversity
+    for movie_id, score in collab_recs:
+        if len(final_recs) >= n:
+            break
+        if movie_id not in [rec[0] for rec in final_recs]:
+            final_recs.append((movie_id, score))
+    
+    # Sort by score
+    final_recs = sorted(final_recs, key=lambda x: x[1], reverse=True)
+    
+    return final_recs[:n]
+
+# from datetime import datetime
+# from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
+# # Register custom template filters
+# @main.app_template_filter('time_format')
+# def time_format(timestamp):
+#     """Format timestamp for chat messages"""
+#     if isinstance(timestamp, str):
+#         timestamp = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+#     return timestamp.strftime('%I:%M %p')  # Returns time in 12-hour format with AM/PM
+
+# @main.app_template_filter('time_ago')
+# def time_ago(timestamp):
+#     """Convert timestamp to '2 minutes ago' format"""
+#     if not timestamp:
+#         return 'Never'
+    
+#     if isinstance(timestamp, str):
+#         timestamp = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+    
+#     now = datetime.now()
+#     diff = now - timestamp
+    
+#     seconds = diff.total_seconds()
+#     if seconds < 60:
+#         return 'Just now'
+#     elif seconds < 3600:
+#         minutes = int(seconds / 60)
+#         return f'{minutes} minute{"s" if minutes != 1 else ""} ago'
+#     elif seconds < 86400:
+#         hours = int(seconds / 3600)
+#         return f'{hours} hour{"s" if hours != 1 else ""} ago'
+#     else:
+#         days = int(seconds / 86400)
+#         return f'{days} day{"s" if days != 1 else ""} ago'
+
+
+# # Main Chat Interface
+# @main.route('/friends_chat')
+# def friends_chat():
+#     if 'user_id' not in session:
+#         flash('Please log in to access chat', 'danger')
+#         return redirect(url_for('main.login'))
+    
+#     user_id = session['user_id']
+#     user = User.query.get(user_id)
+    
+#     # Get friends list
+#     friends = [friendship.user_id1 if friendship.user_id1 != user.id else friendship.user_id2 
+#                for friendship in user.friends.all()]
+#     friends_list = User.query.filter(User.id.in_(friends)).all()
+    
+#     # Get last messages for each friend
+#     friends_with_last_message = []
+#     for friend in friends_list:
+#         last_message = Message.query.filter(
+#             ((Message.sender_id == user_id) & (Message.receiver_id == friend.id)) |
+#             ((Message.sender_id == friend.id) & (Message.receiver_id == user_id))
+#         ).order_by(Message.timestamp.desc()).first()
+        
+#         friends_with_last_message.append({
+#             'friend': friend,
+#             'last_message': last_message.content if last_message else None,
+#             'timestamp': last_message.timestamp if last_message else None,
+#             'unread': Message.query.filter_by(
+#                 sender_id=friend.id,
+#                 receiver_id=user_id,
+#                 is_read=False
+#             ).count()
+#         })
+    
+#     return render_template('friends_chat.html',  friends=friends_with_last_message, user=user, active_friend=None)  # Add active_friend=None here
+
+
+# # Individual Chat Session
+# @main.route('/chat/<int:friend_id>')
+# def chat(friend_id):
+#     if 'user_id' not in session:
+#         flash('Please log in to chat.', 'danger')
+#         return redirect(url_for('main.login'))
+    
+#     user_id = session['user_id']
+    
+#     # Validate friendship
+#     friendship = Friendship.query.filter(
+#         ((Friendship.user_id1 == user_id) & (Friendship.user_id2 == friend_id)) |
+#         ((Friendship.user_id1 == friend_id) & (Friendship.user_id2 == user_id))
+#     ).first()
+    
+#     if not friendship:
+#         flash('You are not friends with this user', 'danger')
+#         return redirect(url_for('main.friends_chat'))
+    
+#     # Get chat history
+#     messages = Message.query.filter(
+#         ((Message.sender_id == user_id) & (Message.receiver_id == friend_id)) |
+#         ((Message.sender_id == friend_id) & (Message.receiver_id == user_id))
+#     ).order_by(Message.timestamp.asc()).limit(100).all()
+    
+#     # Mark messages as read
+#     Message.query.filter_by(
+#         sender_id=friend_id,
+#         receiver_id=user_id,
+#         is_read=False
+#     ).update({'is_read': True})
+#     db.session.commit()
+    
+#     return render_template('chat_window.html',  messages=messages, friend=User.query.get(friend_id))
+
+# @main.route('/send_message/<int:friend_id>', methods=['POST'])
+# def send_message(friend_id):
+#     if 'user_id' not in session:
+#         return jsonify({'success': False, 'message': 'Please log in to send messages.'}), 401
+    
+#     user_id = session['user_id']
+#     data = request.get_json()
+    
+#     # Validate friendship
+#     friendship = Friendship.query.filter(
+#         ((Friendship.user_id1 == user_id) & (Friendship.user_id2 == friend_id)) |
+#         ((Friendship.user_id1 == friend_id) & (Friendship.user_id2 == user_id))
+#     ).first()
+    
+#     if not friendship:
+#         return jsonify({'success': False, 'message': 'You are not friends with this user.'}), 403
+    
+#     # Save message to database
+#     new_message = Message(
+#         sender_id=user_id,
+#         receiver_id=friend_id,
+#         content=data.get('content', ''),
+#         shared_list_id=data.get('shared_list_id', None)
+#     )
+    
+#     db.session.add(new_message)
+#     db.session.commit()
+    
+#     return jsonify({'success': True, 'message': 'Message sent successfully!'})
+
+# @main.route('/get_messages/<int:friend_id>', methods=['GET'])
+# def get_messages(friend_id):
+#     if 'user_id' not in session:
+#         return jsonify({'success': False, 'message': 'Please log in to view messages.'}), 401
+
+#     user_id = session['user_id']
+#     last_message_id = request.args.get('last_message', 0, type=int)
+
+#     # Fetch new messages after the last_message ID
+#     new_messages = Message.query.filter(
+#         ((Message.sender_id == user_id) & (Message.receiver_id == friend_id)) |
+#         ((Message.sender_id == friend_id) & (Message.receiver_id == user_id)),
+#         Message.id > last_message_id
+#     ).order_by(Message.timestamp.asc()).all()
+
+#     # Mark messages as read
+#     unread_ids = [msg.id for msg in new_messages if msg.sender_id == friend_id]
+#     if unread_ids:
+#         Message.query.filter(Message.id.in_(unread_ids)).update({'is_read': True})
+#         db.session.commit()
+
+#     return jsonify({
+#         'success': True,
+#         'messages': [
+#             {
+#                 'id': msg.id,
+#                 'content': msg.content,
+#                 'timestamp': msg.timestamp.strftime('%H:%M'),
+#                 'sender_id': msg.sender_id,
+#                 'is_read': msg.is_read
+#             } for msg in new_messages
+#         ]
+#     })
+
+@main.route('/get_friends')
+def get_friends():
+    if 'user_id' not in session:
+        return jsonify([])
+    
+    user = User.query.get(session['user_id'])
+    friends = [friendship.user_id1 if friendship.user_id1 != user.id else friendship.user_id2 
+               for friendship in user.friends.all()]
+    friends_list = User.query.filter(User.id.in_(friends)).all()
+    
+    return jsonify([{'id': f.id, 'username': f.username} for f in friends_list])
+
+@main.route('/received_lists')
+def received_lists():
+    if 'user_id' not in session:
+        flash('Please log in to view received lists.', 'danger')
+        return redirect(url_for('main.login'))
+
+    user_id = session['user_id']
+    received_lists = ReceivedList.query.filter_by(receiver_id=user_id).all()
+
+    formatted_lists = []
+    for r_list in received_lists:
+        original_list = UserList.query.get(r_list.original_list_id)
+        sender = User.query.get(r_list.sender_id)
+        movies = []
+        for movie in UserListMovie.query.filter_by(list_id=r_list.original_list_id).all():
+            try:
+                movie_details = requests.get(
+                    TMDB_MOVIE_DETAILS_URL.format(movie_id=movie.movie_id, api_key=TMDB_API_KEY)
+                ).json()
+                movies.append({
+                    'id': movie.movie_id,
+                    'title': movie_details.get('title', ''),
+                    'poster_path': movie_details.get('poster_path', '/images/poster_placeholder.jpg')
+                })
+            except:
+                continue
+
+        formatted_lists.append({
+            'id': r_list.id,
+            'name': r_list.name,
+            'sender': sender.username if sender else 'Unknown',
+            'timestamp': r_list.timestamp.strftime('%B %d, %Y'),
+            'movies': movies
+        })
+
+    return render_template('received_lists.html', received_lists=formatted_lists)
+
+
+@main.route('/save_received_list/<int:list_id>', methods=['POST'])
+def save_received_list(list_id):
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Please log in to save lists.'}), 401
+
+    user_id = session['user_id']
+    received_list = ReceivedList.query.get(list_id)
+
+    if not received_list or received_list.receiver_id != user_id:
+        return jsonify({'success': False, 'message': 'List not found or unauthorized.'}), 404
+
+    try:
+        # Save the list to the user's saved lists
+        saved_list = SavedList(
+            user_id=user_id,
+            original_list_id=received_list.original_list_id,
+            original_owner_id=received_list.sender_id,
+            name=received_list.name
+        )
+        db.session.add(saved_list)
+        db.session.commit()
+
+        # Copy movies from original list
+        original_movies = UserListMovie.query.filter_by(list_id=received_list.original_list_id).all()
+        for movie in original_movies:
+            db.session.add(SavedListMovie(
+                saved_list_id=saved_list.id,
+                movie_id=movie.movie_id
+            ))
+        db.session.commit()
+
+        return jsonify({'success': True, 'message': 'List saved successfully!'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@main.route('/delete_received_list/<int:list_id>', methods=['POST'])
+def delete_received_list(list_id):
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Please log in to delete lists.'}), 401
+
+    user_id = session['user_id']
+    received_list = ReceivedList.query.get(list_id)
+
+    if not received_list or received_list.receiver_id != user_id:
+        return jsonify({'success': False, 'message': 'List not found or unauthorized.'}), 404
+
+    try:
+        db.session.delete(received_list)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'List deleted successfully!'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@main.route('/share_list/<int:list_id>', methods=['POST'])
+def share_list(list_id):
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Authentication required'}), 401
+
+    data = request.get_json()
+    friend_id = data.get('friend_id')
+    
+    if not friend_id:
+        return jsonify({'success': False, 'message': 'Friend ID required'}), 400
+
+    user_id = session['user_id']
+    
+    # Validate list ownership
+    user_list = UserList.query.filter_by(id=list_id, user_id=user_id).first()
+    if not user_list:
+        return jsonify({'success': False, 'message': 'List not found'}), 404
+    
+    # Validate friendship
+    friendship = Friendship.query.filter(
+        ((Friendship.user_id1 == user_id) & (Friendship.user_id2 == friend_id)) |
+        ((Friendship.user_id1 == friend_id) & (Friendship.user_id2 == user_id))
+    ).first()
+    
+    if not friendship:
+        return jsonify({'success': False, 'message': 'Not friends with user'}), 403
+
+    try:
+        received_list = ReceivedList(
+            sender_id=user_id,
+            receiver_id=friend_id,
+            original_list_id=list_id,
+            name=user_list.name
+        )
+        db.session.add(received_list)
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'Shared "{user_list.name}"'})
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
 

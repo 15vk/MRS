@@ -1,88 +1,443 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with {{ friend.username }} - CineTrack</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <style>
+        :root {
+            --primary: #e74c3c;
+            --secondary: #2c3e50;
+            --bg-dark: #1a1a1a;
+            --bg-medium: #252525;
+            --bg-light: #2d2d2d;
+            --text: #ecf0f1;
+            --sent-bg: #3498db;
+            --received-bg: #2c3e50;
+        }
 
-{% block title %}CineTrack - Friends Chat{% endblock %}
+        body {
+            background: var(--bg-dark);
+            color: var(--text);
+            font-family: 'Montserrat', sans-serif;
+            height: 100vh;
+            margin: 0;
+            display: flex;
+        }
 
-{% block content %}
+        .chat-container {
+            display: flex;
+            flex: 1;
+            max-width: 1200px;
+            margin: 80px auto 0;
+            background: var(--bg-medium);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 300px;
+            background: var(--bg-light);
+            padding: 20px;
+            border-right: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .friend-info {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: var(--bg-medium);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            animation: slideInLeft 0.5s ease-out;
+        }
+
+        .friend-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), #8e44ad);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+
+        .shared-lists {
+            background: var(--bg-medium);
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .shared-list-item {
+            padding: 10px;
+            margin: 10px 0;
+            background: var(--bg-dark);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .shared-list-item:hover {
+            transform: translateX(5px);
+            background: var(--primary);
+        }
+
+        /* Main Chat Area */
+        .chat-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .messages-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: linear-gradient(
+                var(--bg-dark) 0%,
+                var(--bg-medium) 100%
+            );
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 15px 20px;
+            margin: 10px;
+            border-radius: 15px;
+            position: relative;
+            animation: messageAppear 0.3s ease-out;
+        }
+
+        .sent {
+            background: var(--sent-bg);
+            margin-left: auto;
+            border-bottom-right-radius: 0;
+        }
+
+        .received {
+            background: var(--received-bg);
+            margin-right: auto;
+            border-bottom-left-radius: 0;
+        }
+
+        .message-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .message-actions {
+            position: absolute;
+            right: -30px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .message:hover .message-actions {
+            opacity: 1;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            color: var(--text);
+            cursor: pointer;
+            margin: 0 5px;
+            transition: transform 0.3s ease;
+        }
+
+        .action-btn:hover {
+            transform: scale(1.2);
+        }
+
+        /* Input Area */
+        .input-container {
+            padding: 20px;
+            background: var(--bg-light);
+            display: flex;
+            gap: 10px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 25px;
+            background: var(--bg-dark);
+            color: var(--text);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .message-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--primary);
+        }
+
+        .send-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .send-btn:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+
+        /* Shared List Styling */
+        .shared-list-card {
+            background: var(--bg-dark);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            animation: slideInRight 0.5s ease-out;
+        }
+
+        .list-save-btn {
+            background: var(--primary);
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .list-save-btn:hover {
+            background: #c0392b;
+            transform: scale(1.05);
+        }
+
+        /* Animations */
+        @keyframes messageAppear {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body>
     <div class="chat-container">
-        <!-- Friends List (Left Sidebar) -->
-        <div id="friends-list">
-            <h2>Your Friends</h2>
-            <ul>
-                {% for friend in friends %}
-                    <li class="friend-item" onclick="openChat('{{ friend.id }}', '{{ friend.username }}')">
-                        {{ friend.username }}
-                    </li>
-                {% endfor %}
-            </ul>
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="friend-info">
+                <div class="friend-avatar">{{ friend.username[0]|upper }}</div>
+                <div>
+                    <h3>{{ friend.username }}</h3>
+                    <p class="text-muted">Last active: 2h ago</p>
+                </div>
+            </div>
+
+            <div class="shared-lists">
+                <h4>Shared Lists</h4>
+                <div id="shared-lists-container">
+                    <!-- Shared lists will be loaded here -->
+                </div>
+            </div>
         </div>
 
-        <!-- Chat Interface (Right Sidebar) -->
-        <div id="chat-interface">
-            <div id="chat-header">
-                <h2 id="chat-friend-name">Select a friend to chat</h2>
+        <!-- Main Chat Area -->
+        <div class="chat-main">
+            <div class="messages-container" id="messages-container">
+                {% for message in messages %}
+                    <div class="message {% if message.sender_id == session['user_id'] %}sent{% else %}received{% endif %}">
+                        {% if message.shared_list_id %}
+                            <div class="shared-list-card">
+                                <h5>Shared List: {{ get_list_name(message.shared_list_id) }}</h5>
+                                <button class="list-save-btn" 
+                                        data-list-id="{{ message.shared_list_id }}"
+                                        data-owner-id="{{ message.sender_id }}">
+                                    <i class="fas fa-save"></i> Save List
+                                </button>
+                            </div>
+                        {% else %}
+                            <p>{{ message.content }}</p>
+                        {% endif %}
+                        <div class="message-info">
+                            <span>{{ message.timestamp.strftime('%H:%M') }}</span>
+                            {% if message.sender_id == session['user_id'] %}
+                                <i class="fas fa-check{% if message.is_read %}-double{% endif %}"></i>
+                            {% endif %}
+                        </div>
+                        <div class="message-actions">
+                            <button class="action-btn">
+                                <i class="fas fa-reply"></i>
+                            </button>
+                            <button class="action-btn">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
             </div>
-            <div id="chat-box"></div>
-            <div id="chat-input-container">
-                <input type="text" id="chat-input" placeholder="Type a message...">
-                <button id="send-button" onclick="sendMessage()">Send</button>
-            </div>
+
+            <!-- Input Area -->
+            <form class="input-container" id="chat-form">
+                <div class="list-sharing">
+                    <select id="list-select" class="list-select">
+                        <option value="">Share a List</option>
+                        {% for list in user_lists %}
+                            <option value="{{ list.id }}">{{ list.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <input type="text" 
+                       class="message-input" 
+                       placeholder="Type your message..." 
+                       id="message-input">
+                <button type="submit" class="send-btn">
+                    <i class="fas fa-paper-plane"></i> Send
+                </button>
+            </form>
         </div>
     </div>
-{% endblock %}
 
-{% block scripts %}
-<script>
-    let currentFriendId = null;
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('chat-form');
+            const messageInput = document.getElementById('message-input');
+            const listSelect = document.getElementById('list-select');
+            const messagesContainer = document.getElementById('messages-container');
 
-    // Function to open a chat with a specific friend
-    function openChat(friendId, friendName) {
-        currentFriendId = friendId;
-        document.getElementById('chat-friend-name').textContent = friendName; // Update the chat header
-        loadChatMessages(); // Load chat messages for the selected friend
-    }
+            // Auto-scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-    // Function to load chat messages
-    function loadChatMessages() {
-        if (!currentFriendId) return;
+            // Handle form submission
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const message = messageInput.value;
+                const listId = listSelect.value;
 
-        // Fetch chat messages from the server
-        fetch(`/chat/messages/${currentFriendId}`)
-            .then(response => response.json())
-            .then(data => {
-                const chatBox = document.getElementById('chat-box');
-                chatBox.innerHTML = ''; // Clear the chat box
-                data.messages.forEach(message => {
-                    const messageElement = document.createElement('div');
-                    messageElement.classList.add('chat-message');
-                    messageElement.textContent = message;
-                    chatBox.appendChild(messageElement);
-                });
-                chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the bottom
+                try {
+                    const response = await fetch('/friends_chat/{{ friend.id }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: new URLSearchParams({
+                            message: message,
+                            shared_list_id: listId
+                        })
+                    });
+
+                    if (response.ok) {
+                        messageInput.value = '';
+                        listSelect.value = '';
+                        // Add temporary message with loading animation
+                        addTempMessage(message, listId);
+                        // Refresh messages after short delay
+                        setTimeout(refreshMessages, 1000);
+                    }
+                } catch (error) {
+                    console.error('Error sending message:', error);
+                }
             });
-    }
 
-    // Function to send a message
-    function sendMessage() {
-        const message = document.getElementById('chat-input').value;
-        if (message.trim() === '') return;
+            // Handle list saving
+            document.body.addEventListener('click', async (e) => {
+                if (e.target.closest('.list-save-btn')) {
+                    const btn = e.target.closest('.list-save-btn');
+                    const listId = btn.dataset.listId;
+                    const ownerId = btn.dataset.ownerId;
 
-        // Send the message to the server
-        fetch(`/chat/send`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ friendId: currentFriendId, message: message })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                document.getElementById('chat-input').value = ''; // Clear the input field
-                loadChatMessages(); // Reload chat messages
-            } else {
-                alert('Failed to send message');
+                    try {
+                        const response = await fetch(`/save_shared_list/${listId}/${ownerId}`, {
+                            method: 'POST'
+                        });
+                        
+                        const data = await response.json();
+                        if (data.success) {
+                            btn.innerHTML = '<i class="fas fa-check"></i> Saved!';
+                            btn.style.background = '#2ecc71';
+                            setTimeout(() => {
+                                btn.style.opacity = '0.5';
+                                btn.style.cursor = 'default';
+                            }, 1000);
+                        }
+                    } catch (error) {
+                        console.error('Error saving list:', error);
+                    }
+                }
+            });
+
+            // Refresh messages every 5 seconds
+            setInterval(refreshMessages, 5000);
+
+            async function refreshMessages() {
+                try {
+                    const response = await fetch('/friends_chat/{{ friend.id }}');
+                    const html = await response.text();
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newMessages = doc.getElementById('messages-container').innerHTML;
+                    messagesContainer.innerHTML = newMessages;
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                } catch (error) {
+                    console.error('Error refreshing messages:', error);
+                }
+            }
+
+            function addTempMessage(message, listId) {
+                const tempMessage = document.createElement('div');
+                tempMessage.className = `message sent pending`;
+                tempMessage.innerHTML = `
+                    ${listId ? '<div class="shared-list-card">Shared List</div>' : `<p>${message}</p>`}
+                    <div class="message-info">
+                        <span>Just now</span>
+                        <i class="fas fa-spinner fa-pulse"></i>
+                    </div>
+                `;
+                messagesContainer.appendChild(tempMessage);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
             }
         });
-    }
-</script>
-{% endblock %}
+    </script>
+</body>
+</html>
