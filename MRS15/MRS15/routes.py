@@ -139,7 +139,19 @@ def home():
             
             # Get personalized recommendations
             try:
-                final_recommendations = get_hybrid_recommendations(user.id)
+                user_id = session['user_id']
+    
+                # Get personalized recommendations
+                content_based_recs = get_content_based_recommendations(user_id)
+                collaborative_recs = get_collaborative_recommendations(user_id)
+                hybrid_recs = get_hybrid_recommendations(user_id)
+                
+                # Combine recommendations with weights
+                final_recommendations = combine_recommendations(
+                    content_based_recs, 
+                    collaborative_recs, 
+                    hybrid_recs
+                )
                 
                 # Get movie details for the recommendations
                 recommended_movies = []
@@ -307,7 +319,15 @@ def movie_desc(movie_id):
     
     return render_template('movie_desc.html', movie=movie_details, cast=cast, user_feedback=user_feedback, reviews=review_data, in_wishlist=in_wishlist)
    
-
+@main.route('/get_user_lists', methods=['GET'])
+def get_user_lists():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Please log in to view lists.'}), 401
+    
+    user_lists = UserList.query.filter_by(user_id=session['user_id']).all()
+    lists_data = [{'id': list.id, 'name': list.name} for list in user_lists]
+    
+    return jsonify({'success': True, 'lists': lists_data})
 
 @main.route('/mylist')
 def mylist():
@@ -410,7 +430,54 @@ def profile():
     genres = Genre.query.filter(Genre.id.in_(genre_ids)).all()
     genre_names = [genre.name for genre in genres]
 
-    return render_template('profile.html', user=user, genre_names=genre_names)
+    # Get custom lists with movies
+    custom_lists = []
+    user_lists = UserList.query.filter_by(user_id=user_id).all()
+    
+    for user_list in user_lists:
+        list_movies = []
+        for movie in user_list.movies:
+            movie_details = requests.get(TMDB_MOVIE_DETAILS_URL.format(movie_id=movie.movie_id, api_key=TMDB_API_KEY)).json()
+            list_movies.append(movie_details)
+        
+        custom_lists.append({
+            'id': user_list.id,
+            'name': user_list.name,
+            'movies': list_movies,
+            'is_saved': False
+        })
+
+    return render_template('profile.html', user=user, genre_names=genre_names, custom_lists=custom_lists)
+
+def fetch_and_store_genres():
+    """Fetch genres from TMDB API and store them in the database"""
+    try:
+        # Fetch genres from TMDB API
+        response = requests.get(TMDB_GENRES_URL)
+        response.raise_for_status()
+        
+        genres_data = response.json().get('genres', [])
+        
+        # Store new genres
+        for genre in genres_data:
+            existing_genre = Genre.query.get(genre['id'])
+            if not existing_genre:
+                new_genre = Genre(
+                    id=genre['id'],
+                    name=genre['name']
+                )
+                db.session.add(new_genre)
+        
+        db.session.commit()
+        return True
+        
+    except requests.RequestException as e:
+        print(f"Error fetching genres from TMDB: {str(e)}")
+        return False
+    except Exception as e:
+        print(f"Error storing genres in database: {str(e)}")
+        db.session.rollback()
+        return False
 
 @main.route('/favorites', methods=['GET', 'POST'])
 def favorites():
@@ -419,20 +486,28 @@ def favorites():
         return redirect(url_for('main.login'))
 
     user_id = session['user_id']
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
 
     if request.method == 'POST':
-        selected_genres = request.form.getlist('selected_genres')  # Get selected genres as a list
+        selected_genres = request.form.getlist('selected_genres')
         if selected_genres:
             genre_ids = [int(genre_id) for genre_id in selected_genres]
-            user.favorite_genre = ','.join(map(str, genre_ids))  # Save as a comma-separated string
+            user.favorite_genre = ','.join(map(str, genre_ids))
             db.session.commit()
             flash('Your favorite genres have been saved!', 'success')
         else:
             flash('No genres selected.', 'warning')
-        return redirect(url_for('main.home'))  # Redirect to the index page (home)
+        return redirect(url_for('main.home'))
 
-    genres = Genre.query.all()  # Fetch genres from the database
+    # Fetch and store genres if needed
+    genres = Genre.query.all()
+    if not genres:
+        if fetch_and_store_genres():
+            genres = Genre.query.all()
+        else:
+            flash('Error fetching genres. Please try again later.', 'danger')
+            return redirect(url_for('main.home'))
+
     return render_template('favorites.html', genres=genres)
 
 @main.route('/submit_favorites', methods=['POST'])
@@ -526,8 +601,25 @@ def accept_friend_request(request_id):
 @main.route('/profile/<user_id>')
 def view_profile(user_id):
     user = User.query.get(user_id)
+    
+    # Get custom lists with movies
+    custom_lists = []
+    user_lists = UserList.query.filter_by(user_id=user_id).all()
+    
+    for user_list in user_lists:
+        list_movies = []
+        for movie in user_list.movies:
+            movie_details = requests.get(TMDB_MOVIE_DETAILS_URL.format(movie_id=movie.movie_id, api_key=TMDB_API_KEY)).json()
+            list_movies.append(movie_details)
+        
+        custom_lists.append({
+            'id': user_list.id,
+            'name': user_list.name,
+            'movies': list_movies,
+            'is_saved': False
+        })
     if user:
-        return render_template('profile.html', user=user)
+        return render_template('profile.html', user=user, custom_lists=custom_lists)
     else:
         flash('User not found.', 'danger')
         return redirect(url_for('main.community'))
@@ -795,15 +887,60 @@ def add_to_list(list_id, movie_id):
     
     return jsonify({'success': True, 'message': 'Added to list'})
 
-@main.route('/get_user_lists', methods=['GET'])
-def get_user_lists():
+@main.route('/get_user_lists/<int:list_id>/movies', methods=['GET'])
+def get_list_movies(list_id):
+    # Validate user session first
     if 'user_id' not in session:
-        return jsonify({'success': False, 'message': 'Please log in to view lists.'}), 401
-    
-    user_lists = UserList.query.filter_by(user_id=session['user_id']).all()
-    lists_data = [{'id': list.id, 'name': list.name} for list in user_lists]
-    
-    return jsonify({'success': True, 'lists': lists_data})
+        return jsonify({'success': False, 'message': 'Authentication required'}), 401
+
+    # Get parameters with validation
+    try:
+        user_id = int(request.args.get('user_id'))
+    except (TypeError, ValueError):
+        return jsonify({'success': False, 'message': 'Invalid user ID format'}), 400
+
+    # Verify friendship or ownership
+    current_user_id = session['user_id']
+    is_owner = (current_user_id == user_id)
+    is_friend = Friendship.query.filter(
+        ((Friendship.user_id1 == current_user_id) & (Friendship.user_id2 == user_id)) |
+        ((Friendship.user_id1 == user_id) & (Friendship.user_id2 == current_user_id))
+    ).first()
+
+    if not is_owner and not is_friend:
+        return jsonify({'success': False, 'message': 'Unauthorized access'}), 403
+
+    # Get list with validation
+    user_list = UserList.query.filter_by(id=list_id, user_id=user_id).first()
+    if not user_list:
+        return jsonify({'success': False, 'message': 'List not found'}), 404
+
+    # Fetch movies with error handling
+    movies = []
+    for movie in user_list.movies:
+        try:
+            response = requests.get(
+                f'https://api.themoviedb.org/3/movie/{movie.movie_id}',
+                params={'api_key': TMDB_API_KEY},
+                timeout=10  # Add timeout to prevent hanging
+            )
+            response.raise_for_status()
+            movie_data = response.json()
+            movies.append({
+                'id': movie_data.get('id'),
+                'title': movie_data.get('title'),
+                'poster_path': movie_data.get('poster_path'),
+                'overview': movie_data.get('overview')
+            })
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching movie {movie.movie_id}: {str(e)}")
+            continue
+
+    return jsonify({
+        'success': True,
+        'movies': movies,
+        'list_name': user_list.name
+    })
 
 @main.route('/recommendations')
 def recommendations():
